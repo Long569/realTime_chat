@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+    <title>ChatRT 3.0</title>
+    <link href="image/favicon.png" rel="shortcut icon">
+    <link href="css/app.css" rel="stylesheet">
+    <style>
+        main {
+            overflow-y: scroll;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+        
+        .active {
+            outline: 5px dashed red;
+            outline-offset: -5px;
+        }
+        
+        .image {
+            max-width: 200px;
+            max-height: 200px;
+            border: 1px solid #999;
+            cursor: pointer;
+        }
+        
+        .image:fullscreen {
+            object-fit: scale-down !important;
+            border: none !important;
+            background: #000 !important;
+        }
+        
+        #dialog {
+            border: 1px solid #000;
+            border-radius: 5px;
+            padding: 5px;
+        }
+        
+        #dialog::backdrop {
+            background: #0009;
+        }
+
+        #dialog form {
+            margin-bottom: 5px;
+        }
+
+        #container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        #container .image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+        }
+
+        #btn {
+            anchor-name: --btn;
+        }
+
+        #pop {
+            border: 1px solid #000;
+            border-radius: 5px;
+            padding: 5px;
+
+            inset: unset;
+            top: anchor(--btn top);
+            right: anchor(--btn left);
+            translate: -10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>ChatRT 3.0</h1>
+        <button id="btn" popovertarget="pop">👧🏻 = <b id="count">0</b></button>
+        <div id="pop" popover></div>
+    </header>
+
+    <main>
+        <div style="flex: 1"></div>
+        <ul id="chat"></ul>
+    </main>
+
+    <footer>
+        <form autocomplete="off">
+            <input type="text" id="message" placeholder="Enter Message" autofocus>
+            <button type="button" id="image">Image</button>
+            <button type="button" id="gallery">Gallery</button>
+            <button type="button" id="file">File</button>
+            <button type="button" id="leave">Leave</button>
+            <input type="file" id="file1" accept="image/*" hidden multiple>
+            <input type="file" id="file2" hidden multiple>
+        </form>
+    </footer>
+
+    <dialog id="dialog">
+        <form method="dialog"><button>X</button></form>
+        <div id="container"></div>
+    </dialog>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.slim.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Checking =============================
+        const name = sessionStorage.getItem('name');
+        if (!name) {
+            location = '/';
+            throw 'ERROR: Invalid name';
+        }
+
+        // General Events =======================
+        $('#leave').click(e => {
+            sessionStorage.clear();
+            location = '/';
+        });
+
+        // General Functions ====================
+        function getImageURL(message) {
+            const re = /\.(jpg|jpeg|png|webp|bmp|gif)$/i;
+            try {
+                const url = new URL(message);
+                if (re.test(url.pathname)) {
+                    return url.href;
+                }
+            }
+            catch {
+                // Do nothing
+            }
+            return null;
+        }
+
+        function getYouTubeId(message) {
+            try {
+                const url = new URL(message);
+                if (url.hostname == 'www.youtube.com' &&
+                    url.pathname == '/watch') {
+                    return url.searchParams.get('v');
+                }
+            }
+            catch {
+                // Do nothing
+            }
+            return null;
+        }
+
+        function sendImages(files) {
+            for (const f of files) {
+                if (f && f.type.startsWith('image/')) {
+                    // const fr = new FileReader();
+                    // fr.onload = e => {
+                    //     const url = e.target.result;
+                    //     con.invoke('SendImage', name, url);
+                    // };
+                    // fr.readAsDataURL(f);
+
+                    fit(f, 500, 500, 'dataURL', 'image/webp')
+                        .then(url => con.invoke('SendImage', name, url));
+                }
+            }
+        }
+
+        function sendFiles(files) {
+            for (const f of files) {
+                if (f) {
+                    const fr = new FileReader();
+                    fr.onload = e => {
+                        const url = e.target.result;
+                        con.invoke('SendFile', name, url, f.name);
+                    };
+                    fr.readAsDataURL(f);
+                }
+            }
+        }
+
+        // Connection Setup =====================
+        const param = $.param({ name });
+        
+        const con = new signalR.HubConnectionBuilder()
+            .withUrl('/hub?' + param)
+            .build();
+
+        con.onclose(err => {
+            sessionStorage.clear();
+            location = '/';
+        });
+
+        con.on('ReceiveText', (name, message, who) => {
+            // Text to emoji
+            message = message
+                .replaceAll(':)', '😊')
+                .replaceAll(':(', '😒')
+                .replaceAll('<3', '❤️');
+
+            // HTML escape
+            message = $('<div>').text(message).html();
+
+            // Text to hyperlink
+            message = message.replace(
+                /(https?:\/\/\S+)/gi,
+                '<a href="$&" target="_blank">$&</a>'
+            );
+
+            $('#chat').append(`
+                <li class="${who}">
+                    <div>
+                        <b>${name}:</b> ${message}
+                    </div>
+                </li>
+            `);
+        });
+
+        con.on('ReceiveImage', (name, url, who) => {
+            $('#chat').append(`
+                <li class="${who}">
+                    <div>
+                        <b>${name}</b> sent an image<br>
+                        <img src="${url}" class="image">
+                    </div>
+                </li>
+            `);
+        });
+
+        con.on('ReceiveYouTube', (name, id, who) => {
+            $('#chat').append(`
+                <li class="${who}">
+                    <div>
+                        <b>${name}</b> sent a video<br>
+                        <iframe width="400" height="300" 
+                                src="https://www.youtube.com/embed/${id}"
+                                frameborder="0"
+                                allowfullscreen></iframe>
+                    </div>
+                </li>
+            `);
+        });
+
+        con.on('ReceiveFile', (name, url, filename, who) => {
+            $('#chat').append(`
+                <li class="${who}">
+                    <div>
+                        <b>${name}</b> sent a file<br>
+                        <a href="${url}" download="${filename}">${filename}</a>
+                    </div>
+                </li>
+            `);
+        });
+
+        con.on('UpdateStatus', (count, status, names) => {
+            $('#count').text(count);
+
+            $('#chat').append(`
+                <li class="status">
+                    <div>
+                        ${status}
+                    </div>
+                </li>
+            `);
+
+            $('#pop').html(names.toSorted().join('<br>'));
+        });
+
+        // Start ================================
+        con.start().then(main);
+
+        function main() {
+            // Form
+            $('footer form').submit(e => {
+                e.preventDefault();
+                const message = $('#message').val().trim();
+                if (message) {
+                    const url = getImageURL(message);
+                    const id = getYouTubeId(message);
+
+                    if (url) {
+                        con.invoke('SendImage', name, url);
+                    }
+                    else if (id) {
+                        con.invoke('SendYouTube', name, id);
+                    }
+                    else {
+                        con.invoke('SendText', name, message);
+                    }
+                }
+                $('#message').val('').focus();
+            });
+
+            // Fullscreen
+            $(document).on('click', '.image', e => {
+                document.fullscreenElement ?
+                    document.exitFullscreen() :
+                    e.target.requestFullscreen();
+            });
+            
+            // Image file picker
+            $('#image').click(e => $('#file1').click());
+
+            $('#file1').change(e => {
+                const files = e.target.files;
+                sendImages(files);
+                e.target.value = null;
+            });
+
+            // File file picker
+            $('#file').click(e => $('#file2').click());
+
+            $('#file2').change(e => {
+                const files = e.target.files;
+                sendFiles(files);
+                e.target.value = null;
+            });
+
+            // Drag and drop
+            $('main').on('dragenter dragover', e => {
+                e.preventDefault();
+                $('main').addClass('active');
+            });
+
+            $('main').on('dragleave drop', e => {
+                e.preventDefault();
+                $('main').removeClass('active');
+            });
+
+            $('main').on('drop', e => {
+                e.preventDefault();
+                const files = e.originalEvent.dataTransfer.files;
+                
+                for (const f of files) {
+                    if (f.type.startsWith('image/')) {
+                        sendImages([f]);
+                    }
+                    else {
+                        sendFiles([f]);
+                    }
+                }
+            });
+
+            // Dialog
+            $('#gallery').click(e => {
+                const $images = $('.image').clone();
+                $('#container').html($images.length ? $images : 'No image');
+                $('#dialog')[0].showModal();
+            });
+
+            $('#dialog').on('close', e => {
+                $('#container').empty();
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+    <title>PressRT 2.0 : List</title>
+    <link href="image/favicon.png" rel="shortcut icon">
+    <link href="css/app.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <h1><a href="/">PressRT 2.0 : List</a></h1>
+    </header>
+
+    <main>
+        <p>
+            <button id="leave">Leave</button>
+            <button id="create" disabled>Create Game</button>
+        </p>
+        
+        <p>You are : <b id="you"></b></p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Player A</th>
+                    <th>Join Game</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="2">No game</td></tr>
+            </tbody>
+        </table>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        // ========================================================================================
+        // General
+        // ========================================================================================
+
+        const icon = sessionStorage.getItem('icon');
+        const name = sessionStorage.getItem('name');
+
+        if (!icon || !name) { 
+            location = '/';
+            throw 'ERROR: Invalid icon or name';
+        }
+
+        $('#you').text(`${icon} ${name}`);
+        
+        // ========================================================================================
+        // Events
+        // ========================================================================================
+
+        $('#leave').click(e => {
+            sessionStorage.clear();
+            location = '/';
+        });
+
+        $('#create').click(async e => {
+            const gameId = await con.invoke('Create');
+            location = `game.html?gameId=${gameId}`;
+        });
+
+        $(document).on('click', '[data-join]', e => {
+            const gameId = e.target.dataset.join;
+            location = `game.html?gameId=${gameId}`;
+        });
+
+        // ========================================================================================
+        // Connect
+        // ========================================================================================
+
+        const param = $.param({ page: 'list' });
+
+        const con = new signalR.HubConnectionBuilder()
+            .withUrl('/hub?' + param)
+            .build();
+
+        con.onclose(err => {
+            alert('Disconnected');
+            location = '/';
+        });
+
+        con.on('UpdateList', games => {
+            let h = '';
+
+            for (const game of games) {
+                h += `
+                    <tr>
+                        <td>${game.playerA.icon} ${game.playerA.name}</td>
+                        <td>
+                            <button data-join="${game.id}">Join</button>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            if (games.length == 0) {
+                h = '<tr><td colspan="2">No game</td></tr>';
+            }
+
+            $('tbody').html(h);
+        });
+        
+        con.start().then(main);
+
+        function main() {
+            $('#create').prop('disabled', false);
+        };
+
+    </script>
+</body>
+</html>

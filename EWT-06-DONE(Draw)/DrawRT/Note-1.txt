@@ -1,0 +1,32 @@
+=========================
+🎨 EWT-04: DrawRT 1.0 🎨
+=========================
+
+dotnet dev-certs https --trust
+dotnet watch run
+
+* Data files = EWT-04.zip
+
+1. CSS --> grid layout, flex layout, custom pointer, touch action and user select
+2. Interactive UI events --> input events, wheel events and keyboard events
+3. HTML5 Canvas API
+4. Draw events --> pointer events and others
+
+NOTE: SignalR (real-time features) to be implemented in next lesson
+
+CODE
+----
+0  Clear
+1  Red    #ff0000
+2  Orange #ffa500
+3  Yellow #ffff00
+4  Green  #008000
+5  Blue   #0000ff
+6  Indigo #4b0082
+7  Violet #ee82ee
+8  Black  #000000
+9  White  #ffffff
+
+clear()
+drawLine({ x: 10, y: 10 }, { x: 100, y: 100 }, 10, 'red')
+drawImage('image/favicon.png')

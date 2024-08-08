@@ -1,0 +1,80 @@
+=========================
+👆 EWT-07 PressRT 1.0 👆
+=========================
+
+dotnet dev-certs https --trust
+dotnet watch run
+
+* Data file = EWT-07.zip
+
+- Pressing game --> START to FINISH
+- Group-based real-time communication
+- 2 players per game
+- Multiple games at the same time
+
+(a) index.html (no SignalR)
+(b) list.html --> page = 'list' 
+(c) game.html --> page = 'game', icon, name, gameId
+
+
+===============================
+Player
+-------------------------------
+- STEP   : int
+- FINISH : int
++ Id     : string
++ Icon   : string
++ Name   : string
++ Count  : int
++ IsWin  : bool
+-------------------------------
++ Player(id, icon, name) : void
++ Run() : void
+===============================
+
+
+=============================
+Game
+-----------------------------
++ Id        : string
++ PlayerA   : Player?
++ PlayerB   : Player?
++ IsWaiting : bool
++ IsEmpty   : bool
++ IsFull    : bool
+-----------------------------
++ AddPlayer(player) : string?
+=============================
+
+
+(1) Connections
+---------------
+Clients.All
+Clients.Caller
+Clients.Others
+Clients.Client(string connectionId)
+Clients.Clients(List<string> connectionIds)
+Clients.AllExcept(List<string> connectionIds)
+
+
+(2) Groups
+----------
+Groups.AddToGroupAsync(string connectionId, string groupName)
+Groups.RemoveFromGroupAsync(string connectionId, string groupName)
+
+Clients.Group(string groupName)
+Clients.GroupExcept(string groupName, List<string> connectionIds)
+Clients.Groups(List<string> groupNames)
+Clients.OthersInGroup(string groupName)
+
+- Groups are managed (added or removed) automatically
+- But no built-in mechanism to list groups --> for scalability
+- Developers need to handle that --> depend on case scenario
+
+
+(3) Users
+---------
+Clients.User(string userId)
+Clients.Users(List<string> userIds)
+
+- Need to implement authentication and authorization (ASP.NET security)

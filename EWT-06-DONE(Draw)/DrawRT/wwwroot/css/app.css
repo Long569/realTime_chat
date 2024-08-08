@@ -1,0 +1,44 @@
+﻿/* Font ======================================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+/* General ==================================================================== */
+body, input, textarea, select, button {
+    font: 16px 'Roboto', sans-serif;
+}
+
+body {
+    margin: 0;
+    height: 100vh;
+    display: grid;
+    grid: auto 1fr / auto;
+    background: url(../image/loader.gif) no-repeat center;
+}
+
+header, footer {
+    background-color: #333;
+    color: #fff;
+    padding: 10px 50px;
+}
+
+header h1 {
+    margin: 0;
+    padding-left: 40px;
+    background: url(../image/favicon.png) no-repeat left center / 32px 32px;
+}
+
+header a {
+    text-decoration: none;
+    color: inherit;
+}
+
+main {
+    padding: 10px 50px;
+    flex: 1 1 auto;
+    background: #fff;
+}
+
+@media screen and (max-width: 600px) {
+    header, main {
+        padding: 10px 10px;
+    }
+}

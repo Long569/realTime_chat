@@ -1,0 +1,36 @@
+=========================
+🎨 EWT-05: DrawRT 2.0 🎨
+=========================
+
+dotnet dev-certs https --trust
+dotnet watch run
+
+drawCurve(
+    { x:   0, y:   0 },
+    { x: 250, y: 500 },
+    { x: 500, y:   0 },
+    10,
+    'red'
+);
+
+* Data files = EWT-05.zip
+
+DrawRT 1.0 --> Draw with lines
+DrawRT 2.0 --> Draw with lines + curves
+DrawRT 3.0 --> SignalR real-time features
+
+Line (2 points)
+---------------
+ctx.moveTo(a.x, a.y);
+ctx.lineTo(b.x, b.y);
+ctx.stroke();
+
+Curve (3 points)
+----------------
+ctx.moveTo(a.x, a.y);
+ctx.quadraticCurveTo(b.x, b.y, c.x, c.y);
+ctx.stroke();
+
+Others
+------
+ctx.bezierCurveTo(...) <-- cubic curve
