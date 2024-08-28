@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
@@ -7,6 +8,7 @@
     <link href="image/favicon.png" rel="shortcut icon">
     <link href="css/app.css" rel="stylesheet">
 </head>
+
 <body>
     <header>
         <h1><a href="/">PressRT 2.0 : List</a></h1>
@@ -15,20 +17,27 @@
     <main>
         <p>
             <button id="leave">Leave</button>
+            <select id="type">
+                <option value="press">Press Game</option>
+                <option value="tug">Tug of War</option>
+            </select>
             <button id="create" disabled>Create Game</button>
         </p>
-        
+
         <p>You are : <b id="you"></b></p>
 
         <table>
             <thead>
                 <tr>
-                    <th>Player A</th>
+                    <th>Player</th>
+                    <th>Game Type</th>
                     <th>Join Game</th>
                 </tr>
             </thead>
             <tbody>
-                <tr><td colspan="2">No game</td></tr>
+                <tr>
+                    <td colspan="3">No game</td>
+                </tr>
             </tbody>
         </table>
     </main>
@@ -43,13 +52,13 @@
         const icon = sessionStorage.getItem('icon');
         const name = sessionStorage.getItem('name');
 
-        if (!icon || !name) { 
+        if (!icon || !name) {
             location = '/';
             throw 'ERROR: Invalid icon or name';
         }
 
         $('#you').text(`${icon} ${name}`);
-        
+
         // ========================================================================================
         // Events
         // ========================================================================================
@@ -60,13 +69,25 @@
         });
 
         $('#create').click(async e => {
-            const gameId = await con.invoke('Create');
-            location = `game.html?gameId=${gameId}`;
+            const gameType = $('#type').val();
+            const gameId = await con.invoke('Create', gameType);
+
+            if (gameType == 'press') {
+                location = `game.html?gameId=${gameId}`;
+            } else {
+                location = `tug.html?gameId=${gameId}`;
+            }
         });
 
         $(document).on('click', '[data-join]', e => {
             const gameId = e.target.dataset.join;
-            location = `game.html?gameId=${gameId}`;
+            const gameType = e.target.dataset.type;
+
+            if (gameType == 'press') {
+                location = `game.html?gameId=${gameId}`;
+            } else {
+                location = `tug.html?gameId=${gameId}`;
+            }
         });
 
         // ========================================================================================
@@ -84,27 +105,26 @@
             location = '/';
         });
 
-        con.on('UpdateList', games => {
-            let h = '';
+        con.on('UpdateList', (updatedGames) => {
+    let listHtml = '';
 
-            for (const game of games) {
-                h += `
-                    <tr>
-                        <td>${game.playerA.icon} ${game.playerA.name}</td>
-                        <td>
-                            <button data-join="${game.id}">Join</button>
-                        </td>
-                    </tr>
-                `;
-            }
-
-            if (games.length == 0) {
-                h = '<tr><td colspan="2">No game</td></tr>';
-            }
-
-            $('tbody').html(h);
+    if (updatedGames.length > 0) {
+        updatedGames.forEach(game => {
+            listHtml += `
+                <tr>
+                    <td>${game.playerA ? game.playerA.icon + ' ' + game.playerA.name : game.playerB.icon + ' ' + game.playerB.name}</td>
+                    <td>${game.gameType === 'press' ? '🕹Press Game' : '🎮Tug of War'}</td>
+                    <td><button data-join="${game.id}" data-type="${game.gameType}">Join</button></td>
+                </tr>
+            `;
         });
-        
+    } else {
+        listHtml = '<tr><td colspan="3">No game</td></tr>';
+    }
+
+    $('tbody').html(listHtml);
+});
+
         con.start().then(main);
 
         function main() {
@@ -113,4 +133,5 @@
 
     </script>
 </body>
+
 </html>

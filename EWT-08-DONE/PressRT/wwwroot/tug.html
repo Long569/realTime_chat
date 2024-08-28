@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+    <title>Tug of War</title>
+    <link href="image/favicon.png" rel="shortcut icon">
+    <link href="css/app.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            background-color: #333;
+            padding: 10px 0;
+            text-align: left;
+            padding-left: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            color: white;
+            margin: 0;
+        }
+
+        header h1 a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        main {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #leave {
+            padding: 10px 20px;
+            background-color: #ff4b5c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-bottom: 20px;
+        }
+
+        #leave:hover {
+            background-color: #e63946;
+        }
+
+        #status {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            color: #333;
+        }
+
+        .player-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto 10px;
+}
+
+.player-label {
+    font-size: 1.25rem;
+    color: #666;
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.player-name {
+    font-size: 1.25rem;
+    color: #333;
+    font-weight: bold;
+}
+
+#playerA-info {
+    text-align: left;
+}
+
+#playerB-info {
+    text-align: right;
+}
+
+.boundary {
+    animation: pulse 2s infinite;
+    background-color: transparent;
+    border: none;
+    font-size: 2rem;
+}
+
+.container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100px;
+    position: relative;
+    margin-bottom: 50px;
+    width: 100%;
+}
+
+        .rope {
+            flex: 1;
+            height: 10px;
+            background-color: #8B4513;
+            position: relative;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .indicator {
+            width: 20px;
+            height: 20px;
+            background-color: #3498db;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: left 0.2s ease;
+        }
+
+        .boundary {
+            width: 60px;
+            height: 60px;
+            background-color: #2ecc71;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .me {
+            border: 3px solid blue;
+            border-radius: 5px;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-15px);
+            }
+
+            60% {
+                transform: translateY(-10px);
+            }
+        }
+
+        #status {
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .boundary {
+            animation: pulse 2s infinite;
+            background-color: transparent;
+            border: none;
+            font-size: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1><a href="/">Tug of War</a></h1>
+    </header>
+
+    <main>
+        <p><button id="leave">Leave</button></p>
+        <p id="p"><button id="ready">Ready</button></p>
+
+        <p id="status">Waiting for another player...</p>
+
+        <div class="player-info">
+            <div id="playerA-info">
+                <span class="player-label">Player A:</span> <span id="nameA" class="player-name"></span>
+            </div>
+            <div id="playerB-info">
+                <span class="player-label">Player B:</span> <span id="nameB" class="player-name"></span>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="boundary a" id="iconA"></div>
+            
+            <div class="rope">
+                <div class="indicator" id="rope"></div>
+            </div>
+            <div class="boundary b" id="iconB"></div>
+            
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        // ========================================================================================
+        // General
+        // ========================================================================================
+
+        const icon = sessionStorage.getItem('icon');
+        const name = sessionStorage.getItem('name');
+
+        if (!icon || !name) {
+            location = '/';
+            throw 'ERROR: Invalid icon or name';
+        }
+
+        const gameId = new URL(location).searchParams.get('gameId');
+
+        if (!gameId) {
+            location = 'list.html';
+            throw 'ERROR: Invalid game id';
+        }
+
+        let started = false;
+        let me = null; // A or B
+        let isReady = false; 
+        const $status = $('#status');
+        const $rope = $('#rope');
+        let ropePosition = 50; // Middle of the rope (50%)
+
+        // ========================================================================================
+        // Events
+        // ========================================================================================
+
+        $('#leave').click(e => {
+            location = 'list.html';
+        });
+
+        $('#ready').click(e => {
+        isReady = !isReady; // Toggle readiness state
+        $('#ready').text(isReady ? 'Unready' : 'Ready');
+        con.invoke('PlayerReady', gameId, me, isReady);  // Notify the server of readiness state
+    });
+
+        // ========================================================================================
+        // Connect
+        // ========================================================================================
+
+        const param = $.param({ page: 'game', icon, name, gameId });
+
+        const con = new signalR.HubConnectionBuilder()
+            .withUrl('/hub?' + param)
+            .build();
+
+        con.onclose(err => {
+            alert('Disconnected');
+            location = '/';
+        });
+
+        con.on('Reject', () => {
+            location = 'list.html';
+        });
+
+        con.on('Ready', (letter, game) => {
+            if (game.playerA) {
+                $('#nameA').text(game.playerA.name);
+                $('#iconA').text(game.playerA.icon).show();
+            }
+
+            if (game.playerB) {
+                $('#nameB').text(game.playerB.name);
+                $('#iconB').text(game.playerB.icon).show();
+            }
+
+            if (me == null) {
+                me = letter; // A or B
+                $('#' + letter).addClass('me');
+            }
+        });
+
+        con.on('Left', letter => {
+            let id = setTimeout(() => location = 'list.html', 3000);
+            while (--id) clearTimeout(id);
+
+            started = false;
+            $status.text(`Player ${letter} left. You win!`);
+        });
+
+        con.on('Start', () => {
+
+            let h = `<button id="ready" disabled>Ready</button>`
+            $('#p').html(h);
+
+            setTimeout(() => $status.text('Ready... 3'), 1000);
+            setTimeout(() => $status.text('Ready... 2'), 2000);
+            setTimeout(() => $status.text('Ready... 1'), 3000);
+            setTimeout(() => {
+                started = true;
+                $status.text('Press SPACE to pull!');
+            }, 4000);
+        });
+
+        con.on('PlayerLeft', (leavingPlayerId) => {
+            let leavingPlayer = (me === 'A') ? 'B' : 'A';
+
+            // Update the status message to show which player left
+            $('#status').text(`Player ${leavingPlayer} left. Waiting for a new player...`);
+
+            // Update the UI to remove the leaving player's info
+            if (leavingPlayer === 'B') {
+                $('#nameB').text('');
+                $('#iconB').text('');
+            } else {
+                $('#nameA').text('');
+                $('#iconA').text('');
+            }
+
+            // Reset the game state for waiting
+            $('#ready').prop('disabled', false).text('Ready');
+        });
+
+        con.on('Move', (letter, position) => {
+            ropePosition = position;
+            $rope.css('left', `${ropePosition}%`);
+        });
+
+        con.on('Win', letter => {
+            started = false;
+
+            if (me == letter) {
+                $status.text('You win!');
+            }
+            else {
+                $status.text('You lose!');
+            }
+
+            setTimeout(() => location = 'list.html', 3000);
+        });
+
+        con.start().then(main);
+
+        function main() {
+            $(document).keydown(e => {
+                if (started && e.code == 'Space' && !e.originalEvent.repeat) {
+                    con.invoke('Pull', me);
+                }
+            });
+
+            $(document).on('pointerdown', e => {
+                if (started && e.buttons == 1 && e.originalEvent.isPrimary) {
+                    con.invoke('Pull', me);
+                }
+            });
+        }
+
+    </script>
+</body>
+
+</html>

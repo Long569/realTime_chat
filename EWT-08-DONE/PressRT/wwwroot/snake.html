@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+    <title>Snake Game</title>
+    <link href="image/favicon.png" rel="shortcut icon">
+    <link href="css/app.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            background-color: #333;
+            padding: 10px 0;
+            text-align: left;
+            padding-left: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            color: white;
+            margin: 0;
+        }
+
+        header h1 a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        main {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #leave {
+            padding: 10px 20px;
+            background-color: #ff4b5c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-bottom: 20px;
+        }
+
+        #leave:hover {
+            background-color: #e63946;
+        }
+
+        #status {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            color: #333;
+        }
+
+        #canvas1, #canvas2 {
+            border: 1px solid #333;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1><a href="/">Snake Game</a></h1>
+    </header>
+
+    <main> 
+        <p><button id="leave">Leave</button></p>
+
+        <p id="status">Waiting for another player...</p>
+
+        <canvas id="canvas1" width="400" height="400"></canvas>
+        <canvas id="canvas2" width="400" height="400"></canvas>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        const gridSize = 20; // Define grid size (20x20)
+const initialSnakeLength = 3;
+const snakeSpeed = 200; // Speed in ms
+
+class Snake {
+    constructor() {
+        this.body = [];
+        this.direction = 'RIGHT';
+        this.food = { x: 0, y: 0 };
+        this.score = 0;
+    }
+
+    initialize() {
+        this.body = [];
+        for (let i = 0; i < initialSnakeLength; i++) {
+            this.body.push({ x: i, y: 0 });
+        }
+    }
+
+    move() {
+        const head = { ...this.body[this.body.length - 1] };
+
+        switch (this.direction) {
+            case 'RIGHT':
+                head.x += 1;
+                break;
+            case 'LEFT':
+                head.x -= 1;
+                break;
+            case 'UP':
+                head.y -= 1;
+                break;
+            case 'DOWN':
+                head.y += 1;
+                break;
+        }
+
+        this.body.push(head);
+
+        if (head.x === this.food.x && head.y === this.food.y) {
+            this.score += 1;
+            this.generateFood();
+        } else {
+            this.body.shift();
+        }
+    }
+
+    checkCollision() {
+        const head = this.body[this.body.length - 1];
+
+        if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) {
+            return true;
+        }
+
+        for (let i = 0; i < this.body.length - 1; i++) {
+            if (this.body[i].x === head.x && this.body[i].y === head.y) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    generateFood() {
+        this.food = {
+            x: Math.floor(Math.random() * gridSize),
+            y: Math.floor(Math.random() * gridSize)
+        };
+
+        for (let i = 0; i < this.body.length; i++) {
+            if (this.body[i].x === this.food.x && this.body[i].y === this.food.y) {
+                this.generateFood();
+                break;
+            }
+        }
+    }
+}
+
+const snake1 = new Snake();
+const snake2 = new Snake();
+
+function renderGame(snake, canvasId) {
+    const canvas = document.getElementById(canvasId);
+    const context = canvas.getContext('2d');
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    snake.body.forEach(segment => {
+        context.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
+    });
+
+    context.fillRect(snake.food.x * gridSize, snake.food.y * gridSize, gridSize, gridSize);
+}
+
+$(document).ready(() => {
+    const gameId = new URL(location).searchParams.get('gameId');
+    let me = null;
+
+    const con = new signalR.HubConnectionBuilder()
+        .withUrl('/hub')
+        .build();
+
+    con.on('Ready', (letter, game) => {
+        me = letter;
+
+        snake1.initialize();
+        snake2.initialize();
+
+        snake1.generateFood();
+        snake2.generateFood();
+
+        $('#status').text('Waiting for another player...');
+    });
+
+    con.on('Start', () => {
+        $('#status').text('Game Started!');
+        setInterval(() => {
+            if (me === 'A') {
+                snake1.move();
+                if (snake1.checkCollision()) {
+                    con.invoke('Move', gameId, 'A', 'LOST');
+                } else {
+                    renderGame(snake1, 'canvas1');
+                    con.invoke('Move', gameId, 'A', snake1.direction);
+                }
+            } else if (me === 'B') {
+                snake2.move();
+                if (snake2.checkCollision()) {
+                    con.invoke('Move', gameId, 'B', 'LOST');
+                } else {
+                    renderGame(snake2, 'canvas2');
+                    con.invoke('Move', gameId, 'B', snake2.direction);
+                }
+            }
+        }, snakeSpeed);
+    });
+
+    con.on('Update', (game) => {
+        // Update game state
+        renderGame(game.snakeA, 'canvas1');
+        renderGame(game.snakeB, 'canvas2');
+    });
+
+    con.start().then(main);0
+
+    function main (){
+    $(document).keydown(e => {
+        switch (e.key) {
+            case 'ArrowUp':
+                if (me === 'A' && snake1.direction !== 'DOWN') snake1.direction = 'UP';
+                else if (me === 'B' && snake2.direction !== 'DOWN') snake2.direction = 'UP';
+                break;
+            case 'ArrowDown':
+                if (me === 'A' && snake1.direction !== 'UP') snake1.direction = 'DOWN';
+                else if (me === 'B' && snake2.direction !== 'UP') snake2.direction = 'DOWN';
+                break;
+            case 'ArrowLeft':
+                if (me === 'A' && snake1.direction !== 'RIGHT') snake1.direction = 'LEFT';
+                else if (me === 'B' && snake2.direction !== 'RIGHT') snake2.direction = 'LEFT';
+                break;
+            case 'ArrowRight':
+                if (me === 'A' && snake1.direction !== 'LEFT') snake1.direction = 'RIGHT';
+                else if (me === 'B' && snake2.direction !== 'LEFT') snake2.direction = 'RIGHT';
+                break;
+        }
+    });
+}
+
+    $('#leave').click(() => {
+        con.stop();
+        location = 'list.html';
+    });
+});
+    </script>
+</body>
+</html>

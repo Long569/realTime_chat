@@ -1,28 +1,48 @@
 {
   "Files": [
     {
-      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\Code\\EWT-08-DONE\\PressRT\\wwwroot\\css\\app.css",
+      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\realTime_chat\\EWT-08-DONE\\PressRT\\wwwroot\\css\\app.css",
       "PackagePath": "staticwebassets\\css\\app.css"
     },
     {
-      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\Code\\EWT-08-DONE\\PressRT\\wwwroot\\game.html",
+      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\realTime_chat\\EWT-08-DONE\\PressRT\\wwwroot\\game.html",
       "PackagePath": "staticwebassets\\game.html"
     },
     {
-      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\Code\\EWT-08-DONE\\PressRT\\wwwroot\\image\\favicon.png",
+      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\realTime_chat\\EWT-08-DONE\\PressRT\\wwwroot\\image\\favicon.png",
       "PackagePath": "staticwebassets\\image\\favicon.png"
     },
     {
-      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\Code\\EWT-08-DONE\\PressRT\\wwwroot\\index.html",
+      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\realTime_chat\\EWT-08-DONE\\PressRT\\wwwroot\\index.html",
       "PackagePath": "staticwebassets\\index.html"
     },
     {
-      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\Code\\EWT-08-DONE\\PressRT\\wwwroot\\js\\app.js",
+      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\realTime_chat\\EWT-08-DONE\\PressRT\\wwwroot\\js\\app.js",
       "PackagePath": "staticwebassets\\js\\app.js"
     },
     {
-      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\Code\\EWT-08-DONE\\PressRT\\wwwroot\\list.html",
+      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\realTime_chat\\EWT-08-DONE\\PressRT\\wwwroot\\list.html",
       "PackagePath": "staticwebassets\\list.html"
+    },
+    {
+      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\realTime_chat\\EWT-08-DONE\\PressRT\\wwwroot\\snake.html",
+      "PackagePath": "staticwebassets\\snake.html"
+    },
+    {
+      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\realTime_chat\\EWT-08-DONE\\PressRT\\wwwroot\\sound\\in.mp3",
+      "PackagePath": "staticwebassets\\sound\\in.mp3"
+    },
+    {
+      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\realTime_chat\\EWT-08-DONE\\PressRT\\wwwroot\\sound\\initialD.mp3",
+      "PackagePath": "staticwebassets\\sound\\initialD.mp3"
+    },
+    {
+      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\realTime_chat\\EWT-08-DONE\\PressRT\\wwwroot\\sound\\ready.mp3",
+      "PackagePath": "staticwebassets\\sound\\ready.mp3"
+    },
+    {
+      "Id": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\realTime_chat\\EWT-08-DONE\\PressRT\\wwwroot\\tug.html",
+      "PackagePath": "staticwebassets\\tug.html"
     },
     {
       "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.PressRT.Microsoft.AspNetCore.StaticWebAssets.props",

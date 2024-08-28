@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\Code\\EWT-08-DONE\\PressRT\\PressRT.csproj",
+      "projectUniqueName": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\realTime_chat\\EWT-08-DONE\\PressRT\\PressRT.csproj",
       "projectName": "PressRT",
-      "projectPath": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\Code\\EWT-08-DONE\\PressRT\\PressRT.csproj",
+      "projectPath": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\realTime_chat\\EWT-08-DONE\\PressRT\\PressRT.csproj",
       "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\Code\\EWT-08-DONE\\PressRT\\obj\\",
+      "outputPath": "C:\\Users\\User\\Documents\\Study\\Y2 S3\\EWT\\realTime_chat\\EWT-08-DONE\\PressRT\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config",

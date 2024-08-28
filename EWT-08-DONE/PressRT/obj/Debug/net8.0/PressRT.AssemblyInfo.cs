@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PressRT")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b00f81fbdf79f2ba10b38d18a0dceec996673489")]
 [assembly: System.Reflection.AssemblyProductAttribute("PressRT")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PressRT")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
