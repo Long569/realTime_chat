@@ -5,6 +5,7 @@ public class ChatHub : Hub
     private static int count = 0;
     private static List<string> names = new List<string>();
     private static Dictionary<string, string> messages = new Dictionary<string, string>();
+    //private static List<Game> games = new List<Game>();
 
     public async Task SendText(string name, string message)
     {
@@ -35,8 +36,7 @@ public class ChatHub : Hub
     public async Task SendImage(string name, string url)
     {
         var messageId = Guid.NewGuid().ToString();
-        await Clients.Caller.SendAsync("ReceiveImage", name, url, "caller", messageId);
-        await Clients.Others.SendAsync("ReceiveImage", name, url, "others", messageId);
+        await Clients.All.SendAsync("ReceiveImage", name, url, "caller", messageId);
     }
 
     public async Task SendYouTube(string name, string id)
@@ -53,17 +53,17 @@ public class ChatHub : Hub
         await Clients.Others.SendAsync("ReceiveFile", name, url, filename, "others", messageId);
     }
 
-        public override async Task OnConnectedAsync()
+    public override async Task OnConnectedAsync()
     {
         string page = Context.GetHttpContext()!.Request.Query["page"].ToString();
 
         switch (page)
         {
-            case "chat": await ChatConnected();break;
+            case "chat": await ChatConnected(); break;
             case "list": await ListConnected(); break;
             case "game": await GameConnected(); break;
         }
-        
+
         await base.OnConnectedAsync();
     }
 
@@ -97,6 +97,11 @@ public class ChatHub : Hub
         //await base.OnDisconnectedAsync(exception);
     }
 
+    public async Task RequestGameList()
+    {
+        await Clients.Caller.SendAsync("UpdateList", games.FindAll(g => g.IsWaiting));
+    }
+
     // public override async Task OnConnectedAsync()
     // {
     //     count++;
@@ -113,7 +118,7 @@ public class ChatHub : Hub
     //     names.Remove(name);
     //     await Clients.All.SendAsync("UpdateStatus", count, $"<b>{name}</b> left", names);
     //     await base.OnDisconnectedAsync(exception);
-    // }
+    // }te
 
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -334,30 +339,53 @@ public class ChatHub : Hub
 
     private async Task GameDisconnected()
     {
+        string page = Context.GetHttpContext()!.Request.Query["page"].ToString();
         string id = Context.ConnectionId;
         string gameId = Context.GetHttpContext()!.Request.Query["gameId"].ToString();
 
         var game = games.Find(g => g.Id == gameId);
-        if (game == null)
-        {
-            return;
-        }
+        if (game == null) return;
+
+        Player? leavingPlayer = null;
 
         if (game.PlayerA?.Id == id)
         {
+            leavingPlayer = game.PlayerA;
             game.PlayerA = null;
-            await Clients.Group(gameId).SendAsync("Left", "A");
         }
         else if (game.PlayerB?.Id == id)
         {
+            leavingPlayer = game.PlayerB;
             game.PlayerB = null;
-            await Clients.Group(gameId).SendAsync("Left", "B");
         }
 
-        if (game.IsEmpty)
+        if (leavingPlayer != null)
         {
-            games.Remove(game);
-            await Clients.All.SendAsync("UpdateList", games.FindAll(g => g.IsWaiting));
+            // If the leaving player is not ready, allow the game to continue waiting for a new player
+            if (!leavingPlayer.IsReady)
+            {
+                await Clients.Group(gameId).SendAsync("PlayerLeft", leavingPlayer.Id);
+
+                if (game.IsEmpty)
+                {
+                    games.Remove(game);
+                    await Clients.All.SendAsync("UpdateList", games.FindAll(g => g.IsWaiting));
+                }
+                else
+                {
+                    game.IsWaiting = true;
+                    
+                    await Clients.Group(gameId).SendAsync("UpdateGame", game);
+                    await Clients.All.SendAsync("UpdateList", games.FindAll(g => g.IsWaiting));
+                }
+            }
+            else
+            {
+                // If the player was ready, end the game and notify the remaining player
+                await Clients.Group(gameId).SendAsync("Left", leavingPlayer.Id);
+
+                games.Remove(game);
+            }
         }
     }
 

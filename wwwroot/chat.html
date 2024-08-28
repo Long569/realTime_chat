@@ -142,15 +142,47 @@
 <body>
     <header>
         <h1>ChatRT 3.0</h1>
-        <button id="btn" popovertarget="pop">👧🏻 = <b id="count">0</b></button>
+        <button id="btn" popovertarget="pop"><span>👧🏻</span> = <b id="count">0</b></button>
         <button id="toggleThemeControls" class="hidden-button">Customize Theme</button>
         <div id="pop" popover></div>
     </header>
 
-    <main>
-        <div style="flex: 1"></div>
-        <ul id="chat"></ul>
-    </main>
+    <div id="main-content">
+        <aside id="game-list">
+            <h2>Game List</h2>
+            <ul id="games">
+                <p>
+                    <select id="type">
+                        <option value="press">Press Game</option>
+                        <option value="tug">Tug of War</option>
+                    </select>
+                    <button id="create" disabled>Create Game</button>
+                </p>
+        
+                <p>You are : <b id="you"></b></p>
+        
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Game Type</th>
+                            <th>Join Game</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="3">No game</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </ul>
+        </aside>
+
+        <main id="chat-container">
+            <div style="flex: 1"></div>
+            <ul id="chat"></ul>
+        </main>
+    </div>
 
     <footer>
         <form autocomplete="off">
@@ -185,6 +217,93 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.slim.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
     <script src="./js/app.js"></script>
+    <script>
+                // ========================================================================================
+        // General
+        // ========================================================================================
+
+        const icon = sessionStorage.getItem('icon');
+        const name = sessionStorage.getItem('name');
+
+        if (!icon || !name) {
+            location = '/';
+            throw 'ERROR: Invalid icon or name';
+        }
+
+        $('#you').text(`${icon} ${name}`);
+
+        // ========================================================================================
+        // Events
+        // ========================================================================================
+
+        // $('#leave').click(e => {
+        //     sessionStorage.clear();
+        //     location = '/';
+        // });
+
+        $('#create').click(async e => {
+            const gameType = $('#type').val();
+            const gameId = await con.invoke('Create', gameType);
+
+            if (gameType == 'press') {
+                location = `game.html?gameId=${gameId}`;
+            } else {
+                location = `tug.html?gameId=${gameId}`;
+            }
+        });
+
+        $(document).on('click', '[data-join]', e => {
+            const gameId = e.target.dataset.join;
+            const gameType = e.target.dataset.type;
+
+            if (gameType == 'press') {
+                location = `game.html?gameId=${gameId}`;
+            } else {
+                location = `tug.html?gameId=${gameId}`;
+            }
+        });
+
+        // ========================================================================================
+        // Connect
+        // ========================================================================================
+
+        const param = $.param({ page: 'list' });
+
+        const con = new signalR.HubConnectionBuilder()
+            .withUrl('/hub?' + param)
+            .build();
+
+        con.onclose(err => {
+            alert('Disconnected');
+            location = '/';
+        });
+
+        con.on('UpdateList', (updatedGames) => {
+    let listHtml = '';
+
+    if (updatedGames.length > 0) {
+        updatedGames.forEach(game => {
+            listHtml += `
+                <tr>
+                    <td>${game.playerA ? game.playerA.icon + ' ' + game.playerA.name : game.playerB.icon + ' ' + game.playerB.name}</td>
+                    <td>${game.gameType === 'press' ? '🕹Press Game' : '🎮Tug of War'}</td>
+                    <td><button data-join="${game.id}" data-type="${game.gameType}">Join</button></td>
+                </tr>
+            `;
+        });
+    } else {
+        listHtml = '<tr><td colspan="3">No game</td></tr>';
+    }
+
+    $('tbody').html(listHtml);
+});
+
+        con.start().then(main);
+
+        function main() {
+            $('#create').prop('disabled', false);
+        };
+    </script>
 </body>
 
 </html>

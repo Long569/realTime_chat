@@ -121,7 +121,7 @@
         const gameId = new URL(location).searchParams.get('gameId');
 
         if (!gameId) {
-            location = 'list.html';
+            location = 'chat.html';
             throw 'ERROR: Invalid game id';
         }
 
@@ -135,7 +135,7 @@
         // ========================================================================================
 
         $('#leave').click(e => {
-            location = 'list.html';
+            location = 'chat.html';
         });
 
         $('#ready').click(e => {
@@ -161,7 +161,7 @@
         });
 
         con.on('Reject', () => {
-            location = 'list.html';
+            location = 'chat.html';
         });
 
         con.on('Ready', (letter, game) => {
@@ -183,7 +183,7 @@
         });
 
         con.on('Left', letter => {
-            let id = setTimeout(() => location = 'list.html', 3000);
+            let id = setTimeout(() => location = 'chat.html', 3000);
             while (--id) clearTimeout(id);
 
             started = false;
@@ -238,7 +238,7 @@
                 $status.text('You lose!');
             }
 
-            setTimeout(() => location = 'list.html', 3000);
+            setTimeout(() => location = 'chat.html', 3000);
         });
 
         con.start().then(main);
