@@ -136,6 +136,10 @@
         #toggleThemeControls {
             z-index: 1001;
         }
+
+        #border {
+            margin-top: -50px;
+        }
     </style>
 </head>
 
@@ -147,6 +151,7 @@
         <div id="pop" popover></div>
     </header>
 
+    <div id="border">
     <div id="main-content">
         <aside id="game-list">
             <h2>Game List</h2>
@@ -208,6 +213,7 @@
     
         <!-- Button to play music -->
         <button id="playMusicButton">Play Music</button>
+    </div>
     </div>
 
     <audio id="backgroundMusic" hidden loop></audio>
@@ -277,6 +283,7 @@
             alert('Disconnected');
             location = '/';
         });
+
 
         con.on('UpdateList', (updatedGames) => {
     let listHtml = '';

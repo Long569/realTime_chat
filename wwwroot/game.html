@@ -63,6 +63,10 @@
             border: 3px solid blue;
             border-radius: 5px;
         }
+
+        #game {
+            user-select: none;
+        }
     </style>
 </head>
 
@@ -71,7 +75,7 @@
         <h1><a href="/">PressRT 2.0 : Game</a></h1>
     </header>
 
-    <main>
+    <div id="game">
         <p><button id="leave">Leave</button></p>
         <p id="p"><button id="ready">Ready</button></p>
 
@@ -96,7 +100,18 @@
             </div>
             <div class="finish">FINISH</div>
         </div>
-    </main>
+
+        <main id="chat-container">
+            <div style="flex: 1"></div>
+            <ul id="chat"></ul>
+        </main>
+
+        <footer>
+            <form autocomplete="off">
+                <textarea id="message" placeholder="Enter Message" autofocus></textarea>
+            </form>
+        </footer>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
@@ -142,7 +157,7 @@
             isReady = !isReady; // Toggle readiness state
             $('#ready').text(isReady ? 'Unready' : 'Ready');
             con.invoke('PlayerReady', gameId, me, isReady); // Notify the server of readiness state
-            playSound('sound/ready.mp3');
+            playSound('sounds/ready.mp3');
         });
 
         // ========================================================================================
@@ -166,12 +181,13 @@
 
         con.on('Ready', (letter, game) => {
             if (game.playerA) {
-                playSound('sound/in.mp3');
+                playSound('sounds/in.mp3');
                 $('#nameA').text(game.playerA.name);
                 $('#A').text(game.playerA.icon).show();
             }
 
             if (game.playerB) {
+                playSound('sounds/in.mp3');
                 $('#nameB').text(game.playerB.name);
                 $('#B').text(game.playerB.icon).show();
                 $status.text('Waiting another player...');
@@ -320,313 +336,146 @@
             setTimeout(() => $('#status').css('color', '').text(specialCombo.split('').join('+')), 1000); // Clear message after 1 second and show combo
         });
 
+        ///////////////////////////////////////////////////////////////////////////////////////////////
+        // Function to edit a message
+    window.editMessage = function (id, messageElement) {
+        const messageTextElement = messageElement.querySelector('.message-text');
+
+        if (!messageTextElement) {
+            console.error('Message text element not found.');
+            return;
+        }
+
+        const originalMessage = messageTextElement.innerText;
+
+        const input = document.createElement('textarea');
+        input.value = originalMessage;
+        input.classList.add('edit-input');
+
+        const saveButton = document.createElement('button');
+        saveButton.textContent = 'Save';
+        saveButton.classList.add('save-btn');
+
+        messageElement.innerHTML = '';
+        messageElement.appendChild(input);
+        messageElement.appendChild(saveButton);
+
+        saveButton.onclick = function () {
+            const updatedMessage = input.value.trim();
+            if (updatedMessage) {
+                con.invoke('EditMessage', id, updatedMessage)
+                    .then(() => {
+                        messageElement.innerHTML = `
+                            <b>you:</b> <span class="message-text">${convertLinks(updatedMessage)}</span>
+                            <span class="message-options">
+                                <button onclick="editMessage('${id}', this.closest('.message'))">Edit</button>
+                                <button onclick="deleteMessage('${id}', this.closest('.message'))">Delete</button>
+                            </span>
+                        `;
+                    })
+                    .catch(err => console.error('Error updating message:', err));
+            } else {
+                alert("Message cannot be empty.");
+            }
+        };
+    };
+
+    // Function to delete a message
+    window.deleteMessage = function (id, messageElement) {
+        con.invoke('DeleteMessage', id)
+            .then(() => {
+                messageElement.innerHTML = '<em>This message has been deleted</em>';
+                messageElement.classList.add('message-deleted');
+            })
+            .catch(err => console.error('Error deleting message:', err));
+    };
+
+    // Handle updates to existing messages
+    con.on('UpdateMessage', (id, newMessage) => {
+        const messageElement = document.querySelector(`li[data-id="${id}"] .message-text`);
+        if (messageElement) {
+            messageElement.innerHTML = newMessage;
+        }
+    });
+
+    // Handle deletions of messages
+    con.on('RemoveMessage', (id) => {
+        const messageElement = document.querySelector(`li[data-id="${id}"]`);
+        if (messageElement) {
+            messageElement.classList.add('message-deleted');
+            messageElement.innerHTML = '<em>This message has been deleted</em>';
+        }
+    });
+
+    // Handle text messages
+    con.on('ReceiveText', (userName, message, who, id) => {
+        const isSelf = (userName === name);
+        $('#chat').append(`
+            <li class="message ${isSelf ? 'caller' : 'others'}" data-id="${id}">
+                <div style="text-align: ${isSelf ? 'right' : 'left'};">
+                    <b>${name}:</b> <span class="message-text" style="white-space: pre-wrap;">${message}</span>
+                    ${isSelf ? `
+                        <span class="message-options">
+                            <button onclick="editMessage('${id}', this.closest('.message'))">Edit</button>
+                            <button onclick="deleteMessage('${id}', this.closest('.message'))">Delete</button>
+                        </span>` : ''}
+                </div>
+            </li>
+        `);
+
+        // Play the received sound if it's from others
+        if (!isSelf) {
+            playSound('sounds/message-received.mp3');
+        }
+    });
+
+    con.on('UpdateGameStatus', (status) => {
+            $('#chat').append(`
+            <li class="status">
+                <div>
+                    ${status}
+                </div>
+            </li>
+        `);
+    });
+
+    con.on('UpdateReady', (ready) => {
+        $('#chat').append(`
+            <li class="status">
+                <div>
+                    ${ready}
+                </div>
+            </li>
+        `);
+    });
+
+    $(() => {
+        // Handle the form submission
+        $('footer form').submit(e => {
+            e.preventDefault();
+            const message = $('#message').val().trim();
+
+            if (message) {
+                    con.invoke('SendGameText', name, message, gameId)
+                        .then(() => {
+                            playSound('sounds/message-sent.mp3');  // Play sound on message sent
+                        })
+                        .catch(err => console.error('Error sending message:', err));
+            }
+            $('#message').val('').focus(); // Clear the input field
+        });
+
+        // Handle Enter key for sending messages
+        $('#message').on('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                $(this).closest('form').submit();
+            }
+        });
+    });
+    
+
     </script>
 </body>
 
 </html>
-
-
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
-    <title>Tug of War</title>
-    <link href="image/favicon.png" rel="shortcut icon">
-    <link href="css/app.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
-        header {
-            width: 100%;
-            background-color: #333;
-            padding: 10px 0;
-            text-align: left;
-            padding-left: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        header h1 {
-            font-size: 1.5rem;
-            color: white;
-            margin: 0;
-        }
-
-        header h1 a {
-            text-decoration: none;
-            color: inherit;
-        }
-
-        main {
-            width: 100%;
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: #ffffff;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #leave {
-            padding: 10px 20px;
-            background-color: #ff4b5c;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin-bottom: 20px;
-        }
-
-        #leave:hover {
-            background-color: #e63946;
-        }
-
-        #status {
-            margin-bottom: 20px;
-            font-size: 1.5rem;
-            color: #333;
-        }
-
-        .container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 100px;
-            position: relative;
-            margin-bottom: 50px;
-            width: 100%;
-        }
-
-        .rope {
-            flex: 1;
-            height: 10px;
-            background-color: #8B4513;
-            position: relative;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .indicator {
-            width: 20px;
-            height: 20px;
-            background-color: #3498db;
-            border-radius: 50%;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            transition: left 0.2s ease;
-        }
-
-        .boundary {
-            width: 60px;
-            height: 60px;
-            background-color: #2ecc71;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.5rem;
-            color: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .me {
-            border: 3px solid blue;
-            border-radius: 5px;
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {
-                transform: translateY(0);
-            }
-            40% {
-                transform: translateY(-15px);
-            }
-            60% {
-                transform: translateY(-10px);
-            }
-        }
-
-        #status {
-            animation: bounce 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.1);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        .boundary {
-            animation: pulse 2s infinite;
-            background-color: transparent;
-            border: none;
-            font-size: 2rem;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1><a href="/">Tug of War</a></h1>
-    </header>
-
-    <main> 
-        <p><button id="leave">Leave</button></p>
-
-        <p id="status">Waiting for another player...</p>
-
-        <div class="container">
-            <div class="boundary a" id="iconA"></div>
-            <div class="rope">
-                <div class="indicator" id="rope"></div>
-            </div>
-            <div class="boundary b" id="iconB"></div>
-        </div>
-    </main>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.slim.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
-    <script>
-        // ========================================================================================
-        // General
-        // ========================================================================================
-        
-        const icon = sessionStorage.getItem('icon');
-        const name = sessionStorage.getItem('name');
-
-        if (!icon || !name) { 
-            location = '/';
-            throw 'ERROR: Invalid icon or name';
-        }
-
-        const gameId = new URL(location).searchParams.get('gameId');
-
-        if (!gameId) {
-            location = 'list.html';
-            throw 'ERROR: Invalid game id';
-        }
-
-        let started = false;
-        let me = null; // A or B
-        const $status = $('#status');
-        const $rope = $('#rope');
-        let ropePosition = 50; // Middle of the rope (50%)
-
-        // ========================================================================================
-        // Events
-        // ========================================================================================
-
-        $('#leave').click(e => {
-            location = 'list.html';
-        });
-       
-        // ========================================================================================
-        // Connect
-        // ========================================================================================
-
-        const param = $.param({ page: 'game', icon, name, gameId });
-
-        const con = new signalR.HubConnectionBuilder()
-            .withUrl('/hub?' + param)
-            .build();
-        
-        con.onclose(err => {
-            alert('Disconnected');
-            location = '/';
-        });
-
-        con.on('Reject', () => {
-            location = 'list.html';
-        });
-        
-        con.on('Ready', (letter, game) => {
-            if (game.playerA) {
-                $('#iconA').text(game.playerA.icon).show();
-            }
-
-            if (game.playerB) {
-                $('#iconB').text(game.playerB.icon).show();
-            }
-
-            if (me == null)
-            {
-                me = letter; // A or B
-                $('#' + letter).addClass('me');
-            }
-        });
-
-        con.on('Left', letter => {
-            let id = setTimeout(() => location = 'list.html', 3000);
-            while (--id) clearTimeout(id);
-
-            started = false;
-            $status.text(`Player ${letter} left. You win!`);
-        });
-
-        con.on('Start', () => {
-            setTimeout(() => $status.text('Ready... 3'), 1000);
-            setTimeout(() => $status.text('Ready... 2'), 2000);
-            setTimeout(() => $status.text('Ready... 1'), 3000);
-            setTimeout(() => {
-                started = true;
-                $status.text('Press SPACE to pull!');
-            }, 4000);
-        });
-
-        con.on('Move', (letter, position) => {
-            ropePosition = position;
-            $rope.css('left', `${ropePosition}%`);
-        });
-
-        con.on('Win', letter => {
-            started = false;
-
-            if (me == letter) {
-                $status.text('You win!');
-            }
-            else {
-                $status.text('You lose!');
-            }
-
-            setTimeout(() => location = 'list.html', 3000);
-        });
-
-        con.start().then(main);
-
-        function main() {
-            $(document).keydown(e => {
-                if (started && e.code == 'Space' && !e.originalEvent.repeat) {
-                    con.invoke('Pull', me);
-                }
-            });
-
-            $(document).on('pointerdown', e => {
-                if (started && e.buttons == 1 && e.originalEvent.isPrimary) {
-                    con.invoke('Pull', me);
-                }
-            });
-        }
-
-    </script>
-</body>
-</html> -->

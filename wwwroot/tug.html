@@ -40,7 +40,7 @@
 
         main {
             width: 100%;
-            max-width: 800px;
+            max-width: 1000px;
             margin: 20px auto;
             padding: 20px;
             background-color: #ffffff;
@@ -48,8 +48,8 @@
             border-radius: 10px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            /* justify-content: center;
+            align-items: center; */
         }
 
         #leave {
@@ -180,6 +180,7 @@
 
         #status {
             animation: bounce 2s infinite;
+            align-self: center;
         }
 
         @keyframes pulse {
@@ -208,6 +209,10 @@
             border-radius: 5px;
             border-radius: 50%;
         }
+
+        #game {
+            user-select: none;
+        }
     </style>
 </head>
 
@@ -216,11 +221,11 @@
         <h1><a href="/">Tug of War</a></h1>
     </header>
 
-    <main>
+    <main id="game">
         <p><button id="leave">Leave</button></p>
         <p id="p"><button id="ready">Ready</button></p>
 
-        <p id="status">Waiting for another player...</p>
+        <p id="status" >Waiting for another player...</p>
 
         <div class="player-info">
             <div id="playerA-info">
@@ -240,6 +245,18 @@
             <div class="boundary b" id="iconB"></div>
             
         </div>
+
+        <main id="chat-container">
+            <div style="flex: 1"></div>
+            <ul id="chat"></ul>
+        </main>
+
+        <footer>
+            <form autocomplete="off">
+                <textarea id="message" placeholder="Enter Message" autofocus></textarea>
+            </form>
+        </footer>
+
     </main>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.slim.min.js"></script>
@@ -248,6 +265,11 @@
         // ========================================================================================
         // General
         // ========================================================================================
+
+        function playSound(src) {
+            const sound = new Audio(src);
+            sound.play();
+        }
 
         const icon = sessionStorage.getItem('icon');
         const name = sessionStorage.getItem('name');
@@ -283,6 +305,8 @@
         isReady = !isReady; // Toggle readiness state
         $('#ready').text(isReady ? 'Unready' : 'Ready');
         con.invoke('PlayerReady', gameId, me, isReady);  // Notify the server of readiness state
+        playSound('sounds/ready.mp3');
+        
     });
 
         // ========================================================================================
@@ -306,11 +330,13 @@
 
         con.on('Ready', (letter, game) => {
             if (game.playerA) {
+                playSound('sounds/in.mp3');
                 $('#nameA').text(game.playerA.name);
                 $('#iconA').text(game.playerA.icon).show();
             }
 
             if (game.playerB) {
+                playSound('sounds/in.mp3');
                 $('#nameB').text(game.playerB.name);
                 $('#iconB').text(game.playerB.icon).show();
                 $status.text('Waiting another player...');
@@ -342,6 +368,7 @@
                 started = true;
                 $status.text('Press SPACE to pull!');
             }, 4000);
+            setTimeout(() => playSound('sounds/initialD.mp3'), 4000);
         });
 
         con.on('PlayerLeft', (leavingPlayerId) => {
@@ -440,8 +467,145 @@ con.on('GameOver', letter => {
         $status.text('You lose the game...');
     }
 
-    setTimeout(() => location = 'list.html', 3000);
+    setTimeout(() => location = 'chat.html', 3000);
 });
+
+// Function to edit a message
+window.editMessage = function (id, messageElement) {
+        const messageTextElement = messageElement.querySelector('.message-text');
+
+        if (!messageTextElement) {
+            console.error('Message text element not found.');
+            return;
+        }
+
+        const originalMessage = messageTextElement.innerText;
+
+        const input = document.createElement('textarea');
+        input.value = originalMessage;
+        input.classList.add('edit-input');
+
+        const saveButton = document.createElement('button');
+        saveButton.textContent = 'Save';
+        saveButton.classList.add('save-btn');
+
+        messageElement.innerHTML = '';
+        messageElement.appendChild(input);
+        messageElement.appendChild(saveButton);
+
+        saveButton.onclick = function () {
+            const updatedMessage = input.value.trim();
+            if (updatedMessage) {
+                con.invoke('EditMessage', id, updatedMessage)
+                    .then(() => {
+                        messageElement.innerHTML = `
+                            <b>you:</b> <span class="message-text">${convertLinks(updatedMessage)}</span>
+                            <span class="message-options">
+                                <button onclick="editMessage('${id}', this.closest('.message'))">Edit</button>
+                                <button onclick="deleteMessage('${id}', this.closest('.message'))">Delete</button>
+                            </span>
+                        `;
+                    })
+                    .catch(err => console.error('Error updating message:', err));
+            } else {
+                alert("Message cannot be empty.");
+            }
+        };
+    };
+
+    // Function to delete a message
+    window.deleteMessage = function (id, messageElement) {
+        con.invoke('DeleteMessage', id)
+            .then(() => {
+                messageElement.innerHTML = '<em>This message has been deleted</em>';
+                messageElement.classList.add('message-deleted');
+            })
+            .catch(err => console.error('Error deleting message:', err));
+    };
+
+    // Handle updates to existing messages
+    con.on('UpdateMessage', (id, newMessage) => {
+        const messageElement = document.querySelector(`li[data-id="${id}"] .message-text`);
+        if (messageElement) {
+            messageElement.innerHTML = newMessage;
+        }
+    });
+
+    // Handle deletions of messages
+    con.on('RemoveMessage', (id) => {
+        const messageElement = document.querySelector(`li[data-id="${id}"]`);
+        if (messageElement) {
+            messageElement.classList.add('message-deleted');
+            messageElement.innerHTML = '<em>This message has been deleted</em>';
+        }
+    });
+
+    // Handle text messages
+    con.on('ReceiveText', (userName, message, who, id) => {
+        const isSelf = (userName === name);
+        $('#chat').append(`
+            <li class="message ${isSelf ? 'caller' : 'others'}" data-id="${id}">
+                <div style="text-align: ${isSelf ? 'right' : 'left'};">
+                    <b>${name}:</b> <span class="message-text" style="white-space: pre-wrap;">${message}</span>
+                    ${isSelf ? `
+                        <span class="message-options">
+                            <button onclick="editMessage('${id}', this.closest('.message'))">Edit</button>
+                            <button onclick="deleteMessage('${id}', this.closest('.message'))">Delete</button>
+                        </span>` : ''}
+                </div>
+            </li>
+        `);
+
+        // Play the received sound if it's from others
+        if (!isSelf) {
+            playSound('sounds/message-received.mp3');
+        }
+    });
+
+    con.on('UpdateGameStatus', (status) => {
+            $('#chat').append(`
+            <li class="status">
+                <div>
+                    ${status}
+                </div>
+            </li>
+        `);
+    });
+
+    con.on('UpdateReady', (ready) => {
+        $('#chat').append(`
+            <li class="status">
+                <div>
+                    ${ready}
+                </div>
+            </li>
+        `);
+    });
+
+    $(() => {
+        // Handle the form submission
+        $('footer form').submit(e => {
+            e.preventDefault();
+            const message = $('#message').val().trim();
+
+            if (message) {
+                    con.invoke('SendGameText', name, message, gameId)
+                        .then(() => {
+                            playSound('sounds/message-sent.mp3');  // Play sound on message sent
+                        })
+                        .catch(err => console.error('Error sending message:', err));
+            }
+            $('#message').val('').focus(); // Clear the input field
+        });
+
+        // Handle Enter key for sending messages
+        $('#message').on('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                $(this).closest('form').submit();
+            }
+        });
+    });
 
     </script>
 </body>

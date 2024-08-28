@@ -15,6 +15,14 @@ public class ChatHub : Hub
         await Clients.Others.SendAsync("ReceiveText", name, message, "others", messageId);
     }
 
+    public async Task SendGameText(string name, string message, string gameId)
+    {
+        var messageId = Guid.NewGuid().ToString();
+        messages[messageId] = message;
+        await Clients.Caller.SendAsync("ReceiveText", name, message, "caller", messageId);
+        await Clients.OthersInGroup(gameId).SendAsync("ReceiveText", name, message, "others", messageId);
+    }
+
     public async Task EditMessage(string messageId, string newMessage)
     {
         if (messages.ContainsKey(messageId))
@@ -143,6 +151,7 @@ public class ChatHub : Hub
     public async Task PlayerReady(string gameId, string letter, bool isReady)
     {
         var game = games.Find(g => g.Id == gameId);
+        string name = Context.GetHttpContext()!.Request.Query["name"].ToString();
         if (game == null)
         {
             await Clients.Caller.SendAsync("Reject");
@@ -153,6 +162,8 @@ public class ChatHub : Hub
         if (player != null)
         {
             player.IsReady = isReady;
+            var status = isReady ? "Readyed" : "Unreadyed";
+            await Clients.Group(gameId).SendAsync("UpdateReady", $"<b>{name}</b>: {status}");
         }
 
         if (game.AreBothPlayersReady())
@@ -276,6 +287,7 @@ public class ChatHub : Hub
         await Groups.AddToGroupAsync(id, gameId);
         await Clients.Group(gameId).SendAsync("Ready", letter, game);
         await Clients.All.SendAsync("UpdateList", games.FindAll(g => g.IsWaiting));
+        await Clients.Group(gameId).SendAsync("UpdateGameStatus", $"<b>{name}</b>: joined");
 
         if (game.IsFull && game.AreBothPlayersReady())
         {
@@ -351,6 +363,7 @@ public class ChatHub : Hub
         string page = Context.GetHttpContext()!.Request.Query["page"].ToString();
         string id = Context.ConnectionId;
         string gameId = Context.GetHttpContext()!.Request.Query["gameId"].ToString();
+        string name = Context.GetHttpContext()!.Request.Query["name"].ToString();
 
         var game = games.Find(g => g.Id == gameId);
         if (game == null) return;
@@ -367,6 +380,7 @@ public class ChatHub : Hub
             leavingPlayer = game.PlayerB;
             game.PlayerB = null;
         }
+        await Clients.Group(gameId).SendAsync("UpdateGameStatus", $"<b>{name}</b>: left");
 
         if (leavingPlayer != null)
         {
@@ -391,7 +405,7 @@ public class ChatHub : Hub
             else
             {
                 // If the player was ready, end the game and notify the remaining player
-                await Clients.Group(gameId).SendAsync("Left");
+                await Clients.Group(gameId).SendAsync("Left", name);
 
                 games.Remove(game);
             }
