@@ -1,4 +1,6 @@
 $(document).ready(function () {
+    let imageUrls = [];
+
     // Toggle theme controls visibility
     $('#toggleThemeControls').click(function () {
         $('#themeControls').toggle(); // Toggle visibility
@@ -84,19 +86,73 @@ $(document).ready(function () {
         return null;
     }
 
-    // Function to send images
     function sendImages(files) {
-        for (const f of files) {
-            if (f && f.type.startsWith('image/')) {
+        for (const file of files) {
+            if (file && file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = function (e) {
                     const url = e.target.result;
-                    imageUrls.push(url); // Store the image URL
-                    con.invoke('SendImage', userName, url);
+                    const messageId = Math.random().toString(36).substring(2, 9); // Generate a random message ID for the image
+                    imageUrls.push({ id: messageId, url }); // Store the image URL with an ID
+    
+                    // Debugging: Log the image URL to ensure it is being read correctly
+                    console.log('Image URL:', url);
+    
+                    // Send the image URL to the server
+                    con.invoke('SendImage', userName, url).then(() => {
+                        console.log('Image sent to server');
+                    }).catch(err => console.error('Error sending image:', err));
                 };
-                reader.readAsDataURL(f);
+                reader.readAsDataURL(file);
             }
         }
+    }
+
+    // Function to format the timestamp
+    function formatTimestamp(timestamp) {
+        const date = new Date(timestamp);
+        console.log(timestamp);
+        return date.toLocaleString(); // Format date and time as a string
+    }
+
+    // Function to calculate relative time
+    function getRelativeTime(timestamp) {
+        const now = new Date();
+        const secondsPast = Math.floor((now - new Date(timestamp)) / 1000);
+
+        if (secondsPast < 60) {
+            return secondsPast + " seconds ago";
+        }
+        if (secondsPast < 3600) {
+            return Math.floor(secondsPast / 60) + " minutes ago";
+        }
+        if (secondsPast < 86400) {
+            return Math.floor(secondsPast / 3600) + " hours ago";
+        }
+        return Math.floor(secondsPast / 86400) + " days ago";
+    }
+
+    // Function to append a message with a timestamp
+    function appendMessage(name, message, timestamp, isSelf, messageId) {
+        const formattedTime = formatTimestamp(timestamp);
+        const relativeTime = getRelativeTime(timestamp);
+        const convertedMessage = convertLinks(message);
+
+        $('#chat').append(`
+            <li class="message ${isSelf ? 'caller' : 'others'}" data-id="${messageId}">
+                <div style="text-align: ${isSelf ? 'right' : 'left'};">
+                    <b>${name}:</b> <span class="message-text" style="white-space: pre-wrap;">${convertedMessage}</span>
+                    <div class="timestamp" style="font-size: 0.8em; color: gray;">
+                        ${formattedTime} (${relativeTime})
+                    </div>
+                    ${isSelf ? `
+                        <span class="message-options">
+                            <button onclick="editMessage('${messageId}', this.closest('.message'))">Edit</button>
+                            <button onclick="deleteMessage('${messageId}', this.closest('.message'))">Delete</button>
+                        </span>` : ''}
+                </div>
+            </li>
+        `);
     }
 
     // Function to send files
@@ -106,7 +162,7 @@ $(document).ready(function () {
                 const fr = new FileReader();
                 fr.onload = e => {
                     const url = e.target.result;
-                    con.invoke('SendFile', userName, url, f.name);
+                    con.invoke('SendFile', userName, url, f.name); // Send the file to the server
                 };
                 fr.readAsDataURL(f);
             }
@@ -123,7 +179,6 @@ $(document).ready(function () {
         }
 
         const originalMessage = messageTextElement.innerText;
-
         const input = document.createElement('textarea');
         input.value = originalMessage;
         input.classList.add('edit-input');
@@ -132,22 +187,34 @@ $(document).ready(function () {
         saveButton.textContent = 'Save';
         saveButton.classList.add('save-btn');
 
-        messageElement.innerHTML = '';
+        messageElement.innerHTML = ''; // Clear the message element
         messageElement.appendChild(input);
         messageElement.appendChild(saveButton);
 
         saveButton.onclick = function () {
             const updatedMessage = input.value.trim();
             if (updatedMessage) {
+                console.log('Sending updated message:', updatedMessage);
                 con.invoke('EditMessage', id, updatedMessage)
                     .then(() => {
-                        messageElement.innerHTML = `
-                            <b>you:</b> <span class="message-text">${convertLinks(updatedMessage)}</span>
-                            <span class="message-options">
-                                <button onclick="editMessage('${id}', this.closest('.message'))">Edit</button>
-                                <button onclick="deleteMessage('${id}', this.closest('.message'))">Delete</button>
-                            </span>
-                        `;
+                        console.log('Message updated on server:', updatedMessage);
+                        const text = convertLinks(updatedMessage);
+                        const el = $(`li[data-id='${id}']`);
+                        if (el.length) {
+                            el.html(`
+                                <div style="text-align: ${isSelf ? 'right' : 'left'};">
+                                    <b>${name}:</b> <span class="message-text" style="white-space: pre-wrap;">${text}</span>
+                                    <div class="timestamp" style="font-size: 0.8em; color: gray;">
+                                        ${formattedTime} (${relativeTime})
+                                    </div>
+                                    ${isSelf ? `
+                                        <span class="message-options">
+                                            <button onclick="editMessage('${id}', this.closest('.message'))">Edit</button>
+                                            <button onclick="deleteMessage('${id}', this.closest('.message'))">Delete</button>
+                                        </span>` : ''}
+                                </div>
+                            `);
+                        }
                     })
                     .catch(err => console.error('Error updating message:', err));
             } else {
@@ -156,7 +223,7 @@ $(document).ready(function () {
         };
     };
 
-    // Function to delete a message
+     // Function to delete a message (image or text)
     window.deleteMessage = function (id, messageElement) {
         con.invoke('DeleteMessage', id)
             .then(() => {
@@ -186,11 +253,11 @@ $(document).ready(function () {
         const phoneRegex = /\b(\+?\d{1,4})?\d{7,12}\b/g;
         return message.replace(phoneRegex, phone => {
             const cleanPhone = phone.replace(/\D/g, ''); // Clean non-digit characters
-            return `<a href=\"https://wa.me/${cleanPhone}\" target=\"_blank\">${phone}</a>`;
+            return `<a href="https://wa.me/${cleanPhone}" target="_blank">${phone}</a>`;
         });
     }
 
-    // Connection Setup =====================
+    // Connection Setup
     const userName = sessionStorage.getItem('name') ?? "";
     const icon = sessionStorage.getItem('icon') ?? "";
     if (userName == "") {
@@ -201,6 +268,10 @@ $(document).ready(function () {
     const con = new signalR.HubConnectionBuilder()
         .withUrl('/hub?' + param)
         .build();
+    con.start().then(() => {
+        console.log('SignalR connection established.');
+        main(); // Ensure this function is called after the connection is established
+    }).catch(err => console.error("SignalR connection error:", err));
 
     con.onclose(err => {
         console.error("SignalR connection closed:", err);
@@ -208,16 +279,22 @@ $(document).ready(function () {
         location = '/';
     });
 
-    con.start().then(main).catch(err => console.error("SignalR connection error:", err));
+
 
     // Handle file messages
-    con.on('ReceiveFile', (name, url, filename, who, id) => {
+    con.on('ReceiveFile', (name, url, filename, who, id, timestamp) => {
         const isSelf = (name === userName);
+        const formattedTime = formatTimestamp(timestamp);  // Format the timestamp
+        const relativeTime = getRelativeTime(timestamp);  // Get the relative time
+
         $('#chat').append(`
             <li class="message ${isSelf ? 'caller' : 'others'}" data-id="${id}">
                 <div style="text-align: ${isSelf ? 'right' : 'left'};">
                     <b>${name}</b> sent a file<br>
                     <a href="${url}" download="${filename}">${filename}</a>
+                    <div class="timestamp" style="font-size: 0.8em; color: gray;">
+                        ${formattedTime} (${relativeTime})
+                    </div>
                     ${isSelf ? `
                         <span class="message-options">
                             <button onclick="deleteMessage('${id}', this.closest('.message'))">Delete</button>
@@ -229,56 +306,52 @@ $(document).ready(function () {
         // Play the received sound if it's from others
         if (!isSelf) {
             playSound('sounds/message-received.mp3');
-        }
-    });
-
-    // Handle updates to existing messages
-    con.on('UpdateMessage', (id, newMessage) => {
-        const messageElement = document.querySelector(`li[data-id="${id}"] .message-text`);
-        if (messageElement) {
-            messageElement.innerHTML = newMessage;
-        }
-    });
-
-    // Handle deletions of messages
-    con.on('RemoveMessage', (id) => {
-        const messageElement = document.querySelector(`li[data-id="${id}"]`);
-        if (messageElement) {
-            messageElement.classList.add('message-deleted');
-            messageElement.innerHTML = '<em>This message has been deleted</em>';
         }
     });
 
     // Handle text messages
-    con.on('ReceiveText', (name, message, who, id) => {
+    con.on('ReceiveText', (name, message, who, id, timestamp) => {
+        console.log('Received text message:', { name, message, who, id, timestamp });
         const isSelf = (name === userName);
-        $('#chat').append(`
-            <li class="message ${isSelf ? 'caller' : 'others'}" data-id="${id}">
-                <div style="text-align: ${isSelf ? 'right' : 'left'};">
-                    <b>${name}:</b> <span class="message-text" style="white-space: pre-wrap;">${message}</span>
-                    ${isSelf ? `
-                        <span class="message-options">
-                            <button onclick="editMessage('${id}', this.closest('.message'))">Edit</button>
-                            <button onclick="deleteMessage('${id}', this.closest('.message'))">Delete</button>
-                        </span>` : ''}
-                </div>
-            </li>
-        `);
+        appendMessage(name, message, timestamp, isSelf, id);
+    });
 
-        // Play the received sound if it's from others
-        if (!isSelf) {
-            playSound('sounds/message-received.mp3');
+    // Handle message update
+    con.on('UpdateMessage', (messageId, newMessage) => {
+        const messageElement = $(`[data-id="${messageId}"] .message-text`);
+        if (messageElement.length) {
+            console.log('Updating message in DOM:', newMessage);
+            messageElement.html(convertLinks(newMessage));
         }
     });
 
+    // Handle message removal from the server
+    con.on('RemoveMessage', (messageId) => {
+        const messageElement = $(`[data-id="${messageId}"]`);
+        if (messageElement.length) {
+            messageElement.html('<em>This message has been deleted</em>');
+            messageElement.addClass('message-deleted');
+        }
+    });
+
+
     // Handle image messages received from the server
-    con.on('ReceiveImage', (name, url, who, id) => {
+    con.on('ReceiveImage', (name, url, who, id, timestamp) => {
         const isSelf = (name === userName);
+        const formattedTime = formatTimestamp(timestamp);
+        const relativeTime = getRelativeTime(timestamp);
+    
+        // Debugging: Log the image URL to ensure it is received correctly
+        console.log('Received image URL:', url);
+    
         $('#chat').append(`
             <li class="message ${isSelf ? 'caller' : 'others'}" data-id="${id}">
                 <div style="text-align: ${isSelf ? 'right' : 'left'};">
                     <b>${name}</b> sent an image<br>
                     <img src="${url}" class="image">
+                    <div class="timestamp" style="font-size: 0.8em; color: gray;">
+                        ${formattedTime} (${relativeTime})
+                    </div>
                     ${isSelf ? `
                         <span class="message-options">
                             <button onclick="deleteMessage('${id}', this.closest('.message'))">Delete</button>
@@ -286,16 +359,13 @@ $(document).ready(function () {
                 </div>
             </li>
         `);
-
-        // Play the received sound if it's from others
-        if (!isSelf) {
-            playSound('sounds/message-received.mp3');
-        }
     });
 
     // Handle YouTube videos
-    con.on('ReceiveYouTube', (name, id, who, messageId) => {
+    con.on('ReceiveYouTube', (name, id, who, messageId, timestamp) => {
         const isSelf = (name === userName);
+        const formattedTime = formatTimestamp(timestamp);  // Format the timestamp
+        const relativeTime = getRelativeTime(timestamp);  // Get the relative time
 
         $('#chat').append(`
             <li class="message ${isSelf ? 'caller' : 'others'}" data-id="${messageId}">
@@ -305,32 +375,12 @@ $(document).ready(function () {
                             src="https://www.youtube.com/embed/${id}"
                             frameborder="0"
                             allowfullscreen></iframe>
+                    <div class="timestamp" style="font-size: 0.8em; color: gray;">
+                        ${formattedTime} (${relativeTime})
+                    </div>
                     ${isSelf ? `
                         <span class="message-options">
                             <button onclick="deleteMessage('${messageId}', this.closest('.message'))">Delete</button>
-                        </span>` : ''}
-                </div>
-            </li>
-        `);
-
-        // Play the received sound if it's from others
-        if (!isSelf) {
-            playSound('sounds/message-received.mp3');
-        }
-    });
-
-    // Handle file messages
-    con.on('ReceiveFile', (name, url, filename, who, id) => {
-        const isSelf = (name === userName);
-
-        $('#chat').append(`
-            <li class="message ${isSelf ? 'caller' : 'others'}" data-id="${id}">
-                <div style="text-align: ${isSelf ? 'right' : 'left'};">
-                    <b>${name}</b> sent a file<br>
-                    <a href="${url}" download="${filename}">${filename}</a>
-                    ${isSelf ? `
-                        <span class="message-options">
-                            <button onclick="deleteMessage('${id}', this.closest('.message'))">Delete</button>
                         </span>` : ''}
                 </div>
             </li>
@@ -433,22 +483,45 @@ $(document).ready(function () {
                 e.target.requestFullscreen();
         });
 
-        // Image file picker
-        $('#image').click(e => $('#file1').click());
-
-        $('#file1').change(e => {
-            const files = e.target.files;
-            sendImages(files);
-            e.target.value = null;
+        // Event listener for the "Leave" button
+        $('#leave').click(function () {
+            // Disconnect SignalR connection if needed
+            if (con) {
+                con.stop().then(() => {
+                    sessionStorage.clear();
+                    window.location.href = 'index.html';
+                }).catch(err => {
+                    console.error('Error stopping SignalR connection:', err);
+                    window.location.href = 'index.html'; // Redirect anyway if an error occurs
+                });
+            } else {
+                sessionStorage.clear();
+                window.location.href = 'index.html';
+            }
         });
 
-        // General file picker
-        $('#file').click(e => $('#file2').click());
+        // Event listener for the image button
+        $('#image').click(function () {
+            $('#file1').click(); // Trigger the file input
+        });
 
-        $('#file2').change(e => {
+        // Event listener for image file input change
+        $('#file1').change(function (e) {
+            const files = e.target.files;
+            sendImages(files); // Function to handle image sending
+            e.target.value = null; // Clear the input value to allow the same file to be selected again
+        });
+
+        // Event listener for the file button
+        $('#file').off('click').on('click', e => {
+            $('#file2').click();
+        });
+
+        // Event listener for file input change
+        $('#file2').off('change').on('change', e => {
             const files = e.target.files;
             sendFiles(files);
-            e.target.value = null;
+            e.target.value = null; // Clear the input value to allow the same file to be selected again
         });
 
         // Drag and drop functionality for images and files
@@ -467,6 +540,7 @@ $(document).ready(function () {
             const files = e.originalEvent.dataTransfer.files;
             sendImages(files);
         });
+
         // Display gallery with all images sent during the session
         $('#gallery').click(e => {
             if (imageUrls.length === 0) {
