@@ -161,3 +161,20 @@ audio#backgroundMusic {
     z-index: 1; /* Ensure audio controls are above all other elements */
 }
 
+/***** Table *****/
+table {
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid #999;
+    padding: 5px 10px;
+}
+
+/***** Media Query *****/
+@media only screen and (max-width: 500px) {
+    header, main {
+        padding: 10px;
+    }
+}
+

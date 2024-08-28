@@ -6,6 +6,21 @@
     <title>ChatRT 3.0</title>
     <link href="image/favicon.png" rel="shortcut icon">
     <link href="css/app.css" rel="stylesheet">
+    <style>
+        select, input, button {
+            font-size: 2em;
+        }
+
+        form {
+            display: flex;
+        }
+
+        input {
+            flex: 1;
+            min-width: 200px;
+            max-width: 400px;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -13,20 +28,63 @@
     </header>
 
     <main>
-        <form autocomplete="off">
-            <input type="text" id="name" placeholder="Enter Name" autofocus>
-        </form>
+        <p>Select icon and enter name :</p>
+
+        <form>
+            <select id="icon">
+                <option>👦🏻</option>
+                <option>👧🏻</option>
+                <option>🐶</option>
+                <option>🐱</option>
+                <option>🐭</option>
+                <option>🐹</option>
+                <option>🐰</option>
+                <option>🦊</option>
+                <option>🐻</option>
+                <option>🐼</option>
+                <option>🐨</option>
+                <option>🐯</option>
+                <option>🦁</option>
+                <option>🐮</option>
+                <option>🐷</option>
+                <option>🐸</option>
+                <option>🐵</option>
+                <option>🐺</option>
+                <option>🐗</option>
+                <option>🦝</option>
+                <option>🐴</option>
+                <option>🦄</option>
+                <option>🦓</option>
+            </select>
+            <input id="name" placeholder="Name" autocomplete="off" autofocus>
+            <button>OK</button>
     </main>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.slim.js"></script>
     <script>
+        // ========================================================================================
+        // General
+        // ========================================================================================
+        
+        const el = $('#icon')[0];
+        el.selectedIndex = Math.floor(Math.random() * el.options.length);
+ 
+        // ========================================================================================
+        // Events 
+        // ========================================================================================
+        
         $('form').submit(e => {
             e.preventDefault();
+
+            const icon = $('#icon').val().trim();
             const name = $('#name').val().trim();
-            if (name) {
+
+            if (icon && name) {
+                sessionStorage.setItem('icon', icon);
                 sessionStorage.setItem('name', name);
                 location = 'chat.html';
             }
+
             $('#name').val('').focus();
         });
     </script>
