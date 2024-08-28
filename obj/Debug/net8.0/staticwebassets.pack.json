@@ -9,10 +9,13 @@
       "PackagePath": "staticwebassets\\css\\app.css"
     },
     {
+<<<<<<< Updated upstream
       "Id": "C:\\Users\\SiewYou\\Documents\\GitHub\\realTime_chat\\wwwroot\\image\\39de3b0c924e419833db0c8aab402dd6.jpg",
       "PackagePath": "staticwebassets\\image\\39de3b0c924e419833db0c8aab402dd6.jpg"
     },
     {
+=======
+>>>>>>> Stashed changes
       "Id": "C:\\Users\\SiewYou\\Documents\\GitHub\\realTime_chat\\wwwroot\\image\\favicon.png",
       "PackagePath": "staticwebassets\\image\\favicon.png"
     },
@@ -25,6 +28,7 @@
       "PackagePath": "staticwebassets\\js\\app.js"
     },
     {
+<<<<<<< Updated upstream
       "Id": "C:\\Users\\SiewYou\\Documents\\GitHub\\realTime_chat\\wwwroot\\sounds\\message-received.mp3",
       "PackagePath": "staticwebassets\\sounds\\message-received.mp3"
     },
@@ -33,6 +37,8 @@
       "PackagePath": "staticwebassets\\sounds\\message-sent.mp3"
     },
     {
+=======
+>>>>>>> Stashed changes
       "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.ChatRT.Microsoft.AspNetCore.StaticWebAssets.props",
       "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
     },

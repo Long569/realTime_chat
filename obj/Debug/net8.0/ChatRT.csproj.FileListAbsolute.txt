@@ -1,3 +1,12 @@
+<<<<<<< Updated upstream
+=======
+C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\ChatRT.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\ChatRT.AssemblyInfoInputs.cache
+C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\ChatRT.AssemblyInfo.cs
+C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\ChatRT.csproj.CoreCompileInputs.cache
+C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\ChatRT.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\ChatRT.sourcelink.json
+>>>>>>> Stashed changes
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\bin\Debug\net8.0\appsettings.Development.json
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\bin\Debug\net8.0\appsettings.json
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\bin\Debug\net8.0\ChatRT.staticwebassets.runtime.json
@@ -6,12 +15,15 @@ C:\Users\SiewYou\Documents\GitHub\realTime_chat\bin\Debug\net8.0\ChatRT.deps.jso
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\bin\Debug\net8.0\ChatRT.runtimeconfig.json
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\bin\Debug\net8.0\ChatRT.dll
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\bin\Debug\net8.0\ChatRT.pdb
+<<<<<<< Updated upstream
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\ChatRT.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\ChatRT.AssemblyInfoInputs.cache
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\ChatRT.AssemblyInfo.cs
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\ChatRT.csproj.CoreCompileInputs.cache
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\ChatRT.MvcApplicationPartsAssemblyInfo.cache
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\ChatRT.sourcelink.json
+=======
+>>>>>>> Stashed changes
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\staticwebassets.build.json
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\staticwebassets.development.json
 C:\Users\SiewYou\Documents\GitHub\realTime_chat\obj\Debug\net8.0\staticwebassets\msbuild.ChatRT.Microsoft.AspNetCore.StaticWebAssets.props

@@ -1,6 +1,10 @@
 {
   "Version": 1,
+<<<<<<< Updated upstream
   "Hash": "XwoV8cjR4Jt93qCONXei34Zp0H9XYY5iE/YpOkzQV5E=",
+=======
+  "Hash": "GuLFJ2Ktroc5logU4fkk8Xz6YY8A2/nG92PgCTTnFIw=",
+>>>>>>> Stashed changes
   "Source": "ChatRT",
   "BasePath": "_content/ChatRT",
   "Mode": "Default",
@@ -55,6 +59,7 @@
       "OriginalItemSpec": "wwwroot\\css\\app.css"
     },
     {
+<<<<<<< Updated upstream
       "Identity": "C:\\Users\\SiewYou\\Documents\\GitHub\\realTime_chat\\wwwroot\\image\\39de3b0c924e419833db0c8aab402dd6.jpg",
       "SourceId": "ChatRT",
       "SourceType": "Discovered",
@@ -74,6 +79,8 @@
       "OriginalItemSpec": "wwwroot\\image\\39de3b0c924e419833db0c8aab402dd6.jpg"
     },
     {
+=======
+>>>>>>> Stashed changes
       "Identity": "C:\\Users\\SiewYou\\Documents\\GitHub\\realTime_chat\\wwwroot\\image\\favicon.png",
       "SourceId": "ChatRT",
       "SourceType": "Discovered",
@@ -129,6 +136,7 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\js\\app.js"
+<<<<<<< Updated upstream
     },
     {
       "Identity": "C:\\Users\\SiewYou\\Documents\\GitHub\\realTime_chat\\wwwroot\\sounds\\message-received.mp3",
@@ -167,6 +175,8 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\sounds\\message-sent.mp3"
+=======
+>>>>>>> Stashed changes
     }
   ]
 }

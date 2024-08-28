@@ -13,7 +13,11 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ChatRT")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
+<<<<<<< Updated upstream
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+038625f21b2e1d180179619f042a7499b4b6b42a")]
+=======
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+079b15305dc98965366436227af9826524fd344f")]
+>>>>>>> Stashed changes
 [assembly: System.Reflection.AssemblyProductAttribute("ChatRT")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ChatRT")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
