@@ -202,6 +202,12 @@
             border: none;
             font-size: 2rem;
         }
+
+        .me {
+            border: 3px solid blue;
+            border-radius: 5px;
+            border-radius: 50%;
+        }
     </style>
 </head>
 
@@ -307,11 +313,12 @@
             if (game.playerB) {
                 $('#nameB').text(game.playerB.name);
                 $('#iconB').text(game.playerB.icon).show();
+                $status.text('Waiting another player...');
             }
 
             if (me == null) {
                 me = letter; // A or B
-                $('#' + letter).addClass('me');
+                $('#icon' + letter).addClass('me');
             }
         });
 
@@ -389,6 +396,52 @@
                 }
             });
         }
+
+        con.on('RoundWin', (letter, scoreA, scoreB, currentRound) => {
+    started = false;
+    console.log(letter);
+
+    if (me == letter && letter == 'A') {
+        $status.text(`You won round ${scoreA}!`);
+    }
+    else if (me == letter && letter == 'B'){
+        $status.text(`You won round ${scoreA}!`);
+    }else if (me != letter && letter == 'A'){
+        $status.text(`You lost round ${scoreA}...`);
+    }else if (me != letter && letter == 'B'){
+        $status.text(`You lost round ${scoreB}...`);
+    }
+
+    setTimeout(() => {
+        if (currentRound <= 3) {
+            $status.text('Get ready for the next round!');
+            setTimeout(() => $status.text('Ready... 3'), 1000);
+            setTimeout(() => $status.text('Ready... 2'), 2000);
+            setTimeout(() => $status.text('Ready... 1'), 3000);
+            setTimeout(() => {
+                started = true;
+                $status.text('Press SPACE to pull!');
+            }, 4000);
+        }
+    }, 3000);
+});
+
+con.on('ResetRound', (position) => {
+    $rope.css('left', `${position}%`);
+});
+
+con.on('GameOver', letter => {
+    started = false;
+
+    if (me == letter) {
+        $status.text('You win the game!');
+    }
+    else {
+        $status.text('You lose the game...');
+    }
+
+    setTimeout(() => location = 'list.html', 3000);
+});
 
     </script>
 </body>

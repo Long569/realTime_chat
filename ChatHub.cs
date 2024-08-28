@@ -161,24 +161,32 @@ public class ChatHub : Hub
     // Tug of War Pull
     // ----------------------------------------------------------------------------------------
     public async Task Pull(string letter)
+{
+    string gameId = Context.GetHttpContext()!.Request.Query["gameId"].ToString();
+    var game = games.Find(g => g.Id == gameId);
+    if (game == null)
     {
-        string gameId = Context.GetHttpContext()!.Request.Query["gameId"].ToString();
-        var game = games.Find(g => g.Id == gameId);
-        if (game == null)
-        {
-            await Clients.Caller.SendAsync("Reject");
-            return;
-        }
+        await Clients.Caller.SendAsync("Reject");
+        return;
+    }
 
-        if (game.Pull(letter))
+    if (game.Pull(letter))
+    {
+        if (game.IsGameOver)
         {
-            await Clients.Group(gameId).SendAsync("Win", letter);
+            await Clients.Group(gameId).SendAsync("GameOver", letter);
         }
         else
         {
-            await Clients.Group(gameId).SendAsync("Move", letter, game.RopePosition);
+            await Clients.Group(gameId).SendAsync("RoundWin", letter, game.ScoreA, game.ScoreB, game.CurrentRound);
+            await Clients.Group(gameId).SendAsync("ResetRound", game.RopePosition);
         }
     }
+    else
+    {
+        await Clients.Group(gameId).SendAsync("Move", letter, game.RopePosition);
+    }
+}
 
     // ----------------------------------------------------------------------------------------
     // Press Game Run
@@ -199,6 +207,7 @@ public class ChatHub : Hub
         await Clients.Group(gameId).SendAsync("Move", letter, player.Count);
         if (player.IsWin)
         {
+            //player.WinCount++;
             await Clients.Group(gameId).SendAsync("Win", letter);
         }
     }
@@ -334,30 +343,53 @@ public class ChatHub : Hub
 
     private async Task GameDisconnected()
     {
+        string page = Context.GetHttpContext()!.Request.Query["page"].ToString();
         string id = Context.ConnectionId;
         string gameId = Context.GetHttpContext()!.Request.Query["gameId"].ToString();
 
         var game = games.Find(g => g.Id == gameId);
-        if (game == null)
-        {
-            return;
-        }
+        if (game == null) return;
+
+        Player? leavingPlayer = null;
 
         if (game.PlayerA?.Id == id)
         {
+            leavingPlayer = game.PlayerA;
             game.PlayerA = null;
-            await Clients.Group(gameId).SendAsync("Left", "A");
         }
         else if (game.PlayerB?.Id == id)
         {
+            leavingPlayer = game.PlayerB;
             game.PlayerB = null;
-            await Clients.Group(gameId).SendAsync("Left", "B");
         }
 
-        if (game.IsEmpty)
+        if (leavingPlayer != null)
         {
-            games.Remove(game);
-            await Clients.All.SendAsync("UpdateList", games.FindAll(g => g.IsWaiting));
+            // If the leaving player is not ready, allow the game to continue waiting for a new player
+            if (!leavingPlayer.IsReady)
+            {
+                await Clients.Group(gameId).SendAsync("PlayerLeft");
+
+                if (game.IsEmpty)
+                {
+                    games.Remove(game);
+                    await Clients.All.SendAsync("UpdateList", games.FindAll(g => g.IsWaiting));
+                }
+                else
+                {
+                    game.IsWaiting = true;
+                    
+                    await Clients.Group(gameId).SendAsync("UpdateGame", game);
+                    await Clients.All.SendAsync("UpdateList", games.FindAll(g => g.IsWaiting));
+                }
+            }
+            else
+            {
+                // If the player was ready, end the game and notify the remaining player
+                await Clients.Group(gameId).SendAsync("Left");
+
+                games.Remove(game);
+            }
         }
     }
 
@@ -383,6 +415,7 @@ public class Player
     public int Count { get; set; } = 0; // Used in Press Game
     public bool IsWin => Count >= FINISH;
     public bool IsReady { get; set; } = false; // New property to track readiness
+    public int WinCount { get; set; } = 0;
 
     public Player(string id, string icon, string name)
     {
@@ -411,6 +444,7 @@ public class Game
     private const int WIN_POSITION = 0;
     private const int LOSE_POSITION = 100;
     private const int FINISH = 100; // Press Game finish line
+    private const int ROUNDS_TO_WIN = 2;
 
     public string Id { get; } = Guid.NewGuid().ToString();
     public Player? PlayerA { get; set; }
@@ -420,6 +454,11 @@ public class Game
     public bool IsFull => PlayerA != null && PlayerB != null;
     public int RopePosition { get; private set; } = START_POSITION; // Used in Tug of War
     public string GameType { get; set; }
+    public int ScoreA { get; private set; } = 0; // Player A's score
+    public int ScoreB { get; private set; } = 0; // Player B's score
+    public int CurrentRound { get; private set; } = 1;
+    public bool IsGameOver => ScoreA == ROUNDS_TO_WIN || ScoreB == ROUNDS_TO_WIN;
+    
 
     public Game(string gameType)
     {
@@ -458,11 +497,25 @@ public class Game
 
         if (RopePosition <= WIN_POSITION || RopePosition >= LOSE_POSITION)
         {
+            if (letter == "A")
+            {
+                ScoreA++;
+            }
+            else
+            {
+                ScoreB++;
+            }
+
+            // Reset position for next round
+            RopePosition = START_POSITION;
+            CurrentRound++;
+
             return true;
         }
 
         return false;
     }
+
 
     // Press Game Logic
     public void Run(string letter)
