@@ -145,6 +145,11 @@ textarea {
     color: #888;
 }
 
+.save-btn {
+    margin-top: 5px;
+    cursor: pointer;
+}
+
 /* Theme customization controls */
 #themeControls {
     display: none;
