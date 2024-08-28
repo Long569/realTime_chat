@@ -88,8 +88,13 @@ $(document).ready(function () {
     function sendImages(files) {
         for (const f of files) {
             if (f && f.type.startsWith('image/')) {
-                fit(f, 500, 500, 'dataURL', 'image/webp')
-                    .then(url => con.invoke('SendImage', userName, url));
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const url = e.target.result;
+                    imageUrls.push(url); // Store the image URL
+                    con.invoke('SendImage', userName, url);
+                };
+                reader.readAsDataURL(f);
             }
         }
     }
@@ -181,22 +186,21 @@ $(document).ready(function () {
         const phoneRegex = /\b(\+?\d{1,4})?\d{7,12}\b/g;
         return message.replace(phoneRegex, phone => {
             const cleanPhone = phone.replace(/\D/g, ''); // Clean non-digit characters
-            return `<a href="https://wa.me/${cleanPhone}" target="_blank">${phone}</a>`;
+            return `<a href=\"https://wa.me/${cleanPhone}\" target=\"_blank\">${phone}</a>`;
         });
     }
 
     // Connection Setup =====================
-    const userName = sessionStorage.getItem('name') ?? "" ;
-    if (userName == ""){
+    const userName = sessionStorage.getItem('name') ?? "";
+    const icon = sessionStorage.getItem('icon') ?? "";
+    if (userName == "") {
         location = "/";
     }
-    const param = $.param({ name: userName });
+    const param = $.param({ name: userName, icon, page: "chat" });
 
     const con = new signalR.HubConnectionBuilder()
         .withUrl('/hub?' + param)
         .build();
-
-    con.start().then(main).catch(err => console.error("SignalR connection error:", err));
 
     con.onclose(err => {
         console.error("SignalR connection closed:", err);
@@ -204,11 +208,50 @@ $(document).ready(function () {
         location = '/';
     });
 
+    con.start().then(main).catch(err => console.error("SignalR connection error:", err));
+
+    // Handle file messages
+    con.on('ReceiveFile', (name, url, filename, who, id) => {
+        const isSelf = (name === userName);
+        $('#chat').append(`
+            <li class="message ${isSelf ? 'caller' : 'others'}" data-id="${id}">
+                <div style="text-align: ${isSelf ? 'right' : 'left'};">
+                    <b>${name}</b> sent a file<br>
+                    <a href="${url}" download="${filename}">${filename}</a>
+                    ${isSelf ? `
+                        <span class="message-options">
+                            <button onclick="deleteMessage('${id}', this.closest('.message'))">Delete</button>
+                        </span>` : ''}
+                </div>
+            </li>
+        `);
+
+        // Play the received sound if it's from others
+        if (!isSelf) {
+            playSound('sounds/message-received.mp3');
+        }
+    });
+
+    // Handle updates to existing messages
+    con.on('UpdateMessage', (id, newMessage) => {
+        const messageElement = document.querySelector(`li[data-id="${id}"] .message-text`);
+        if (messageElement) {
+            messageElement.innerHTML = newMessage;
+        }
+    });
+
+    // Handle deletions of messages
+    con.on('RemoveMessage', (id) => {
+        const messageElement = document.querySelector(`li[data-id="${id}"]`);
+        if (messageElement) {
+            messageElement.classList.add('message-deleted');
+            messageElement.innerHTML = '<em>This message has been deleted</em>';
+        }
+    });
+
     // Handle text messages
     con.on('ReceiveText', (name, message, who, id) => {
-        message = $('<div>').text(message).html();  // Escape HTML to prevent XSS
         const isSelf = (name === userName);
-
         $('#chat').append(`
             <li class="message ${isSelf ? 'caller' : 'others'}" data-id="${id}">
                 <div style="text-align: ${isSelf ? 'right' : 'left'};">
@@ -228,25 +271,7 @@ $(document).ready(function () {
         }
     });
 
-    // Handle updates to existing messages
-    con.on('UpdateMessage', (id, newMessage) => {
-        const messageElement = document.querySelector(`li[data-id="${id}"] .message-text`);
-        if (messageElement) {
-            newMessage = convertLinks(newMessage);  // Convert links before displaying
-            messageElement.innerHTML = newMessage;
-        }
-    });
-
-    // Handle deletions of messages
-    con.on('RemoveMessage', (id) => {
-        const messageElement = document.querySelector(`li[data-id="${id}"]`);
-        if (messageElement) {
-            messageElement.classList.add('message-deleted');
-            messageElement.innerHTML = '<em>This message has been deleted</em>';
-        }
-    });
-
-    // Handle image messages
+    // Handle image messages received from the server
     con.on('ReceiveImage', (name, url, who, id) => {
         const isSelf = (name === userName);
         $('#chat').append(`
@@ -319,6 +344,7 @@ $(document).ready(function () {
 
     // Handle status updates (e.g., user count, status messages)
     con.on('UpdateStatus', (count, status, names) => {
+        $('#btn > span').text(icon);
         $('#count').text(count);
 
         $('#chat').append(`
@@ -337,8 +363,35 @@ $(document).ready(function () {
         $('body').css('background-image', `url(${imageUrl})`);
     });
 
-    // Start the connection
-    con.start().then(main);
+    // Fetch and update the game list
+    function updateGameList(games) {
+        $('#games').empty();
+        games.forEach(game => {
+            $('#games').append(`
+                <li data-game-id="${game.Id}">
+                    ${game.GameType} - ${game.IsWaiting ? "Waiting for player" : "In progress"}
+                </li>
+            `);
+        });
+    }
+
+    // Handle game list updates from the server
+    // con.on('UpdateList', (games) => {
+    //     updateGameList(games);
+    // });
+
+    // Click event on a game to join or view details
+    $('#games').on('click', 'li', function () {
+        const gameId = $(this).data('game-id');
+        // Implement game joining or viewing logic here
+    });
+
+    // On connection start, request the game list
+    con.start().then(() => {
+        // Request initial game list
+        con.invoke('RequestGameList');
+        main();
+    }).catch(err => console.error("SignalR connection error:", err));
 
     function main() {
         // Handle the form submission
@@ -412,20 +465,18 @@ $(document).ready(function () {
         $('main').on('drop', e => {
             e.preventDefault();
             const files = e.originalEvent.dataTransfer.files;
-
-            for (const f of files) {
-                if (f.type.startsWith('image/')) {
-                    sendImages([f]);
-                } else {
-                    sendFiles([f]);
-                }
-            }
+            sendImages(files);
         });
-
-        // Dialog for displaying the gallery of images
+        // Display gallery with all images sent during the session
         $('#gallery').click(e => {
-            const $images = $('.image').clone();
-            $('#container').html($images.length ? $images : 'No image');
+            if (imageUrls.length === 0) {
+                $('#container').html('No images to display');
+            } else {
+                $('#container').empty();
+                imageUrls.forEach(url => {
+                    $('#container').append(`<img src="${url}" class="image">`);
+                });
+            }
             $('#dialog')[0].showModal();
         });
 

@@ -13,6 +13,9 @@ body {
     grid-template-rows: auto 1fr auto;
     position: relative;
     overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 body::before {
@@ -22,9 +25,7 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    
     z-index: -1; /* Ensure the background is behind all content */
 }
 
@@ -57,7 +58,7 @@ main {
     position: relative;
     overflow-y: auto;
     border-radius: 10px;
-    max-height: calc(100vh - 150px); /* Adjust according to your header and footer height */
+   
 }
 
 form {
@@ -106,6 +107,18 @@ textarea {
 
 #chat li.status div {
     background-color: rgba(255, 213, 79, 0.9); /* Yellow background */
+}
+
+.message.caller {
+    text-align: right;
+    margin-left: auto;
+    border-radius: 10px;
+}
+
+.message.others {
+    text-align: left;
+    margin-right: auto;
+    border-radius: 10px;
 }
 
 /* New styles for edit and delete buttons */
@@ -176,5 +189,50 @@ th, td {
     header, main {
         padding: 10px;
     }
+}
+
+
+#main-content {
+    display: grid;
+    grid-template-columns: 1fr 2fr; /* Adjust the ratio between the game list and chat */
+    height: calc(100vh - 100px); /* Adjust height to account for header and footer */
+    
+}
+
+#game-list {
+    background-color: rgba(240, 240, 240, 0.9);
+    padding: 10px;
+    overflow-y: auto;
+    border-radius: 10px;
+    border: 5px solid #000;
+}
+
+#game-list h2 {
+    margin-top: 0;
+}
+
+#games {
+    list-style-type: none;
+    padding: 0;
+}
+
+#games li {
+    padding: 5px;
+    margin-bottom: 5px;
+    background-color: #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#chat-container {
+    overflow-y: scroll;
+    display: flex;
+    flex-direction: column-reverse;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    z-index: 1;
+    position: relative;
+    border-radius: 10px;
+    border: 5px solid #000;
 }
 

@@ -5,6 +5,7 @@ public class ChatHub : Hub
     private static int count = 0;
     private static List<string> names = new List<string>();
     private static Dictionary<string, string> messages = new Dictionary<string, string>();
+    //private static List<Game> games = new List<Game>();
 
     public async Task SendText(string name, string message)
     {
@@ -35,8 +36,7 @@ public class ChatHub : Hub
     public async Task SendImage(string name, string url)
     {
         var messageId = Guid.NewGuid().ToString();
-        await Clients.Caller.SendAsync("ReceiveImage", name, url, "caller", messageId);
-        await Clients.Others.SendAsync("ReceiveImage", name, url, "others", messageId);
+        await Clients.All.SendAsync("ReceiveImage", name, url, "caller", messageId);
     }
 
     public async Task SendYouTube(string name, string id)
@@ -53,17 +53,17 @@ public class ChatHub : Hub
         await Clients.Others.SendAsync("ReceiveFile", name, url, filename, "others", messageId);
     }
 
-        public override async Task OnConnectedAsync()
+    public override async Task OnConnectedAsync()
     {
         string page = Context.GetHttpContext()!.Request.Query["page"].ToString();
 
         switch (page)
         {
-            case "chat": await ChatConnected();break;
+            case "chat": await ChatConnected(); break;
             case "list": await ListConnected(); break;
             case "game": await GameConnected(); break;
         }
-        
+
         await base.OnConnectedAsync();
     }
 
@@ -97,6 +97,11 @@ public class ChatHub : Hub
         //await base.OnDisconnectedAsync(exception);
     }
 
+    public async Task RequestGameList()
+    {
+        await Clients.Caller.SendAsync("UpdateList", games.FindAll(g => g.IsWaiting));
+    }
+
     // public override async Task OnConnectedAsync()
     // {
     //     count++;
@@ -113,7 +118,7 @@ public class ChatHub : Hub
     //     names.Remove(name);
     //     await Clients.All.SendAsync("UpdateStatus", count, $"<b>{name}</b> left", names);
     //     await base.OnDisconnectedAsync(exception);
-    // }
+    // }te
 
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
