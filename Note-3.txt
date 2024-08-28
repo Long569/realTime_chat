@@ -21,18 +21,18 @@ EXTRA: User list
 
 Improvements:
 -------------
-- Multiline text --> textarea
-- Email to hyperlink 
+✔- Multiline text --> textarea
+✔- Email to hyperlink 
     - mailto:abc@example.com
-- Phone to WhatsApp link
+✔- Phone to WhatsApp link
     - whatsapp://send?phone=60127671159
     - https://wa.me/60127671159
-- Edit and delete sent message
-- Changeable chatroom theme
+✔- Edit and delete sent message
+✔- Changeable chatroom theme
     - Color theme
     - Background image
     - Background music
-- Audio effects
+✔- Audio effects
     - Message sent
     - Message received
 - Support more emoji

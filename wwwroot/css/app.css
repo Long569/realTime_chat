@@ -2,24 +2,37 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
 /* General ==================================================================== */
-body, input, select, button {
+body, input, select, button, textarea {
     font: 16px 'Roboto', sans-serif;
 }
 
 body {
     margin: 0;
-    height: 100dvh;
+    height: 100vh;
     display: grid;
-    grid: auto 1fr auto / auto;
+    grid-template-rows: auto 1fr auto;
+    position: relative;
+    overflow: hidden;
 }
 
-header {
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: -1; /* Ensure the background is behind all content */
+}
+
+header, footer {
+    z-index: 1; /* Ensure it is above the background */
+    background-color: rgba(51, 51, 51, 0.8); /* Semi-transparent for readability */
     padding: 10px;
     white-space: nowrap;
-    background-color: #333;
-    color: #ccc;
-    display: flex;
-    place-items: center;
 }
 
 header h1 {
@@ -39,29 +52,35 @@ header button {
 
 main {
     padding: 10px;
+    background-color: rgba(255, 255, 255, 0.9); /* Ensure messages are readable */
+    z-index: 1; /* Ensure main content is above the background image */
+    position: relative;
+    overflow-y: auto;
+    border-radius: 10px;
+    max-height: calc(100vh - 150px); /* Adjust according to your header and footer height */
 }
 
-footer {
-    padding: 10px;
-    white-space: nowrap;
-    background-color: #333;
+form {
+    display: flex;
+    align-items: center;
 }
 
-input[type=text] {
+textarea {
     padding: 5px;
     box-sizing: border-box;
     width: 100%;
+    height: 60px;
+    resize: none;
+    font: 16px 'Roboto', sans-serif;
+    overflow-y: auto;
 }
 
 /* Chat ======================================================================= */
-form {
-    display: flex;
-}
-
 #chat {
     list-style: none;
     margin: 0;
     padding: 0;
+    z-index: 2; /* Ensure chat messages are above everything else */
 }
 
 #chat li {
@@ -74,28 +93,71 @@ form {
     padding: 3px 6px;
     border-radius: 3px;
     word-break: break-all;
-}
-
-#chat li.caller {
-    text-align: right;
+    background-color: rgba(255, 255, 255, 0.8); /* Ensure messages are visible */
 }
 
 #chat li.caller div {
-    background-color: #aed581;
-}
-
-#chat li.others {
-    text-align: left;
+    background-color: rgba(173, 233, 147, 0.9); /* Light green background */
 }
 
 #chat li.others div {
-    background-color: #80deea;
-}
-
-#chat li.status {
-    text-align: center;
+    background-color: rgba(128, 222, 234, 0.9); /* Light blue background */
 }
 
 #chat li.status div {
-    background-color: #ffd54f;
+    background-color: rgba(255, 213, 79, 0.9); /* Yellow background */
 }
+
+/* New styles for edit and delete buttons */
+.message-options {
+    display: none;
+    margin-left: 10px;
+}
+
+.message:hover .message-options {
+    display: inline;
+}
+
+.message-actions {
+    margin-top: 5px;
+}
+
+.edit-mode input {
+    width: 80%;
+    margin-right: 5px;
+}
+
+.message-deleted {
+    font-style: italic;
+    color: #888;
+}
+
+/* Theme customization controls */
+#themeControls {
+    display: none;
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000; /* Ensure it is above other elements */
+}
+
+#themeControls label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+#toggleThemeControls {
+    z-index: 1001; /* Ensure the button is above everything */
+}
+
+audio#backgroundMusic {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 1; /* Ensure audio controls are above all other elements */
+}
+
