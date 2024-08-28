@@ -329,57 +329,35 @@ public class ChatHub : Hub
     private async Task ListDisconnected()
     {
         await Task.CompletedTask;
+        
     }
 
     private async Task GameDisconnected()
     {
-        string page = Context.GetHttpContext()!.Request.Query["page"].ToString();
         string id = Context.ConnectionId;
         string gameId = Context.GetHttpContext()!.Request.Query["gameId"].ToString();
 
         var game = games.Find(g => g.Id == gameId);
-        if (game == null) return;
-
-        Player? leavingPlayer = null;
+        if (game == null)
+        {
+            return;
+        }
 
         if (game.PlayerA?.Id == id)
         {
-            leavingPlayer = game.PlayerA;
             game.PlayerA = null;
+            await Clients.Group(gameId).SendAsync("Left", "A");
         }
         else if (game.PlayerB?.Id == id)
         {
-            leavingPlayer = game.PlayerB;
             game.PlayerB = null;
+            await Clients.Group(gameId).SendAsync("Left", "B");
         }
 
-        if (leavingPlayer != null)
+        if (game.IsEmpty)
         {
-            // If the leaving player is not ready, allow the game to continue waiting for a new player
-            if (!leavingPlayer.IsReady)
-            {
-                await Clients.Group(gameId).SendAsync("PlayerLeft", leavingPlayer.Id);
-
-                if (game.IsEmpty)
-                {
-                    games.Remove(game);
-                    await Clients.All.SendAsync("UpdateList", games.FindAll(g => g.IsWaiting));
-                }
-                else
-                {
-                    game.IsWaiting = true;
-                    
-                    await Clients.Group(gameId).SendAsync("UpdateGame", game);
-                    await Clients.All.SendAsync("UpdateList", games.FindAll(g => g.IsWaiting));
-                }
-            }
-            else
-            {
-                // If the player was ready, end the game and notify the remaining player
-                await Clients.Group(gameId).SendAsync("Left", leavingPlayer.Id);
-
-                games.Remove(game);
-            }
+            games.Remove(game);
+            await Clients.All.SendAsync("UpdateList", games.FindAll(g => g.IsWaiting));
         }
     }
 
