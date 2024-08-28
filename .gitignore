@@ -1,6 +1,6 @@
-./bin
+./bin/
 README.md
-./obj
+./obj/
 obj/Debug/net8.0/ChatRT.AssemblyInfo.cs
 obj/Debug/net8.0/ChatRT.AssemblyInfoInputs.cache
 obj/Debug/net8.0/ChatRT.sourcelink.json
